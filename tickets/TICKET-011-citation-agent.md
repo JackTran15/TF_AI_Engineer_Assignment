@@ -14,6 +14,7 @@ Ref: `implementation-plan.md §7 Phase 3` — "Add explanation generation and ci
 
 - [ai-pipeline.md — §5.3 CitationAgent Responsibilities](../ai-pipeline.md): Claim extraction, evidence linking, validation rules, coverage checks, output shaping.
 - [ai-pipeline.md — §5.4 Agent Inputs and Outputs](../ai-pipeline.md): CitationAgent input (explanation draft + evidence candidates) and output (citation_set + verdicts + coverage score).
+- [ai-pipeline.md — §5.5 Model Routing and Cost Optimization](../ai-pipeline.md): High-performance model tier reserved for high-ambiguity claim adjudication.
 - [architecture.md — §6 Output Contract](../architecture.md): Each result must include `citations[]` with `source_type`, `source_id`, `field`.
 - [data-model.md — §2.3 Recommendation Entities](../data-model.md): `recommendation_citations` table with `source_id`, `chunk_id`.
 
@@ -33,6 +34,8 @@ Implement the `CitationAgent` that validates every claim in an explanation again
 - [ ] **Rewrite request:** When coverage < threshold, the agent can request claim rewrite from the explanation generator.
 - [ ] **Stale version rejection:** Citations referencing outdated `profile_version` or `embedding_version` are rejected.
 - [ ] Results are persisted to `recommendation_citations` table.
+- [ ] **Model tier routing:** Default claim extraction/linking uses deterministic rules or cheap/balanced model tier; escalate to high-performance model only for unresolved ambiguous claims.
+- [ ] Citation trace records `model_tier`, `model_name`, token usage, and escalation reason when high-performance adjudication is used.
 
 ## Technical Details
 
@@ -119,6 +122,7 @@ def link_evidence(claim: Claim, evidence: list[EvidenceChunk]) -> list[Citation]
 - **Unsupported claim removal:** Inject a hallucinated claim ("T001 has 20 years experience" when actual is 8); verify it receives `unsupported` verdict and is removed from the final explanation.
 - **Rewrite loop:** Set coverage threshold to 0.99; pass an explanation with 1 weakly supported claim; verify the agent requests a rewrite and re-validates.
 - **Persistence:** After validation, query `recommendation_citations` for the request; verify citation rows exist with correct `source_id`, `chunk_id`, and `evidence_span`.
+- **Ambiguous claim escalation:** Provide claims with conflicting evidence spans and borderline overlap scores; verify high-performance model tier is used only for those unresolved claims, with escalation reason logged.
 
 ### E2E / Manual Tests
 - **Full pipeline citation check for S002:** Run the complete pipeline (retrieval -> scoring -> reranking -> explanation -> citation); verify every claim in the final output has at least one citation. Verify no `unsupported` claims remain.
@@ -137,6 +141,7 @@ def link_evidence(claim: Claim, evidence: list[EvidenceChunk]) -> list[Citation]
 | AC: Rewrite request when coverage low | Integration | Rewrite loop test |
 | AC: Stale version rejection | Unit | Stale version rejection test |
 | AC: Persisted to recommendation_citations | Integration | Persistence test |
+| AC: Tiered model usage in citation adjudication | Integration | Ambiguous claim escalation test |
 
 ## Dataset References
 

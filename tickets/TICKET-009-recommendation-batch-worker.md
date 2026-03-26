@@ -39,6 +39,9 @@ Implement the `recommendationBatchWorker` that periodically scans for students a
 - [ ] `batch_run_logs` table records each batch run with `worker_name`, `batch_size`, `status`, `started_at`, `completed_at`.
 - [ ] Worker logs: eligible student count, batch count, dispatch latency, error count.
 - [ ] Under load (100+ eligible students), worker dispatches batches without blocking and respects queue backpressure signals.
+- [ ] **Autoscaling triggers are implemented:** scale up when recommendation queue depth > `50` or worker P95 processing latency > `5s`; scale down after `5` consecutive minutes of empty queue.
+- [ ] **Worker scaling guardrail:** recommendation worker count is capped at `10` instances to stay within LLM provider limits.
+- [ ] **Capacity target validation:** with batch size `10`, `3` workers sustain ~`75` students/min and drain `1,000` queued students in ~`14` minutes (allowing test-environment tolerance).
 
 ## Technical Details
 
@@ -140,10 +143,14 @@ const retryPolicy = {
 - **batch_run_logs:** After a batch run, query `batch_run_logs`; verify a row exists with `worker_name = 'recommendationBatchWorker'`, correct `batch_size`, and `status = 'completed'`.
 - **Retry + DLQ:** Simulate 3 consecutive failures for a recommendation job; verify exponential backoff (1s, 4s, 16s) and then routing to DLQ.
 - **Backpressure:** Set `maxQueueDepth` to a low value, fill the queue, then trigger batch scan; verify worker delays or reduces batch size.
+- **Scale-up trigger:** Simulate queue depth > 50; verify autoscaler requests additional worker instances (up to configured max).
+- **Latency trigger:** Inject processing delay to breach P95 > 5s; verify autoscaler requests scale-up.
+- **Scale-down trigger:** Keep queue empty for 5 consecutive minutes; verify autoscaler scales recommendation workers down.
 
 ### E2E / Manual Tests
 - **Full recommendation cycle:** Ingest 3 students from `new_students.json`, ensure teachers are indexed, trigger the batch worker; wait for RAG Orchestrator to complete. Verify all 3 `recommendation_requests` reach `status = 'completed'` with corresponding `recommendation_results` rows.
 - **Scale test (100 students):** Generate 100 synthetic students with `status = 'looking_for_new_coach'`; trigger worker; verify batches of 5-10 are created and dispatched without blocking. Monitor `batch_run_logs` for all batches.
+- **Scale test (1,000 students):** Generate 1,000 synthetic students; run with 3 workers and batch size 10; verify queue drains in approximately 14 minutes (+/- environment variance), or document measured throughput and deviation.
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
@@ -158,6 +165,10 @@ const retryPolicy = {
 | AC: Failed jobs to DLQ after 3 retries | Integration | Retry + DLQ test |
 | AC: batch_run_logs recorded | Integration | batch_run_logs verification |
 | AC: Handles 100+ students without blocking | E2E | Scale test (100 students) |
+| AC: Autoscaling triggers based on depth/latency | Integration | Scale-up + latency trigger tests |
+| AC: Scale-down after sustained empty queue | Integration | Scale-down trigger test |
+| AC: Worker cap at 10 instances | Integration | Scale-up trigger with max cap enforcement |
+| AC: Capacity target for 1,000 queue drain | E2E | Scale test (1,000 students) |
 
 ## Dataset References
 

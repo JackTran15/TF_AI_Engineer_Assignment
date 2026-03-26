@@ -15,6 +15,7 @@ Ref: `implementation-plan.md §7 Phase 3` — "Add explanation generation and ci
 - [ai-pipeline.md — §5 Multi-Agent AI Design — ToolCallAgent](../ai-pipeline.md): Tool-call-only policy, allowed tools (semantic_search, web_search), structured retrieval traces.
 - [ai-pipeline.md — §5.2 ToolCallAgent Responsibilities](../ai-pipeline.md): Retrieval planning, evidence gathering, traceability, fallback strategy, safety guardrails.
 - [ai-pipeline.md — §5.4 Agent Inputs and Outputs](../ai-pipeline.md): Input (student profile, retrieval policy, human_notes_version) and output (ranked evidence candidates, retrieval trace).
+- [ai-pipeline.md — §5.5 Model Routing and Cost Optimization](../ai-pipeline.md): Task-based model tier routing with escalation only when uncertainty is high.
 - [technical-proposal.md — §6 Multi-Agent AI Architecture — ToolCallAgent](../technical-proposal.md): Tool-call-only execution policy, allowed tools, structured evidence packets.
 
 ## Description
@@ -35,6 +36,8 @@ This agent is invoked by the OrchestratorAgent (TICKET-013) during each recommen
 - [ ] **Domain allowlist:** `web_search` is restricted to approved domains only.
 - [ ] `web_search` is only invoked when retrieval quality is below a configurable threshold.
 - [ ] Output includes `evidence_candidates[]` with relevance scores and `retrieval_trace` for observability.
+- [ ] **Model tier routing:** Use cheap model tier for lightweight query rewriting/normalization, balanced tier for retrieval planning, and high-performance tier only for high-ambiguity cases (for example contradictory `human_notes_version` constraints).
+- [ ] `pipeline_trace_steps` records `model_tier`, `model_name`, and token usage for each ToolCallAgent LLM invocation.
 
 ## Technical Details
 
@@ -133,6 +136,9 @@ tools = [
 - **Execution timeout:** Set timeout to 1s; simulate a slow tool taking 5s; verify timeout fires and partial results are returned.
 - **Domain allowlist:** Attempt `web_search` with a non-allowed domain; verify it is blocked.
 - **Trace logging:** Execute 2 tool calls; verify trace contains 2 entries with `tool_name`, `request`, `response_hash`, `latency_ms`.
+- **Model routing — cheap tier:** Pass a simple query-normalization task; verify cheap model tier is selected.
+- **Model routing — balanced tier:** Pass normal retrieval planning for S002; verify balanced model tier is selected.
+- **Model routing — high-performance escalation:** Pass contradictory reviewer constraints; verify escalation to high-performance tier.
 
 ### Integration Tests
 - **Full retrieval for S002:** Run ToolCallAgent with S002 profile; verify it executes `semantic_search`, returns evidence candidates including T001 chunks, and writes a trace to `pipeline_trace_steps`.
@@ -155,6 +161,8 @@ tools = [
 | AC: Fallback expansion on low quality | Unit + Integration | Web_search trigger + fallback expansion |
 | AC: Domain allowlist for web_search | Unit | Domain allowlist test |
 | AC: web_search only when quality low | Unit | No web_search for normal quality |
+| AC: Model tier routing applied by task complexity | Unit | Model routing tests |
+| AC: Model tier and token usage traced | Unit + Integration | Trace logging + pipeline trace verification |
 
 ## Dataset References
 

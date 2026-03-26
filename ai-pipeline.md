@@ -184,6 +184,27 @@ For each student recommendation job:
 - claim-level support verdicts
 - citation completeness and reliability score
 
+### 5.5 Model Routing and Cost Optimization
+
+To control LLM spend, the pipeline uses task-based model routing instead of a single model for all steps.
+
+| Task Type | Pipeline Tasks | Model Tier | Target Quality | Cost Strategy |
+|---|---|---|---|---|
+| Simple / low-risk | Input normalization fallback, short field cleanup, explanation template polishing | **Cheap model** | Good-enough formatting accuracy | Always prefer low-cost model; retry once before fallback template |
+| Moderate reasoning | LLM reranking of top candidates, explanation drafting per teacher | **Balanced model** | Strong semantic fit with stable latency | Default for production; bounded prompt size and strict token caps |
+| High reasoning / high impact | Citation dispute resolution, ambiguous evidence adjudication, complex HITL rerun with conflicting constraints | **High-performance reasoning model** | Highest factual reliability and decision quality | Invoke only when quality gates fail or uncertainty is high |
+
+Routing rules:
+- Run deterministic retrieval/scoring first; call LLM only where semantic reasoning adds measurable value.
+- Use cheap model for simple language tasks that do not affect ranking or safety outcomes.
+- Escalate to high-performance model only for uncertain, high-impact decisions (for example, low citation coverage with conflicting evidence).
+- If budget or rate limits are constrained, skip moderate/high model stages and use deterministic ranking plus templated explanations.
+- Record selected `model_tier`, token usage, and latency in trace logs for cost and quality audits.
+
+Suggested trigger policy:
+- **Balanced -> High-performance escalation:** citation coverage `< 0.95`, confidence near threshold band, or HITL rerun with contradictory notes.
+- **Balanced -> Cheap downgrade:** non-critical post-processing tasks (style cleanup, wording normalization) after core ranking is finalized.
+
 ## 6) HITL Rules
 
 HITL handoff is triggered when:

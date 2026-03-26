@@ -35,6 +35,7 @@ The reranker uses the LLM to evaluate nuanced fit factors that deterministic sco
 - [ ] **Fallback behavior:** If the LLM call fails (timeout, rate limit, error), the system falls back to deterministic-only ranking and logs a warning. The recommendation is still produced.
 - [ ] **Rate limiting:** LLM reranker calls are throttled to stay within provider limits (configurable RPM/TPM).
 - [ ] **Token budget:** The reranker prompt is capped at a configurable token limit (default: 4000 tokens). Candidate profiles are truncated if necessary.
+- [ ] **Cost-control model tiering:** Reranker supports a cheaper model tier (for example, `gpt-4o-mini`) via config and records selected model in trace output.
 - [ ] A `pipeline_trace_steps` entry records `step_name='llm_reranking'` with the prompt, LLM response, model used, latency, and token usage.
 - [ ] Reranking latency P95 is under 3 seconds.
 
@@ -132,6 +133,7 @@ async def rerank_with_fallback(student, candidates, config):
 - **Token budget enforcement:** Build a prompt that exceeds 4000 tokens; verify candidate profiles are truncated to fit within the limit.
 - **Fallback on timeout:** Simulate LLM timeout (>5s); verify `rerank_with_fallback` returns top-4 by deterministic score and logs a warning.
 - **Fallback on rate limit:** Simulate rate limit error; verify fallback path and warning log.
+- **Model-tier configuration:** Set reranker model to `gpt-4o-mini`; verify request uses configured model and trace stores that model value.
 
 ### Integration Tests
 - **Live/mocked reranking:** Send 10 candidates for S002 to the LLM reranker (with real or mocked LLM); verify a top-4 list is returned with blended scores and rationales.
@@ -153,6 +155,7 @@ async def rerank_with_fallback(student, candidates, config):
 | AC: Blended score formula applied | Unit | Blended score calculation |
 | AC: Fallback on LLM failure | Unit | Fallback on timeout + rate limit |
 | AC: Rate limiting / token budget | Unit | Token budget enforcement |
+| AC: Cost-control model tiering | Unit | Model-tier configuration test |
 | AC: Trace entry written | Integration | Trace output verification |
 | AC: P95 latency under 3s | E2E | Full pipeline timing check |
 | AC: Circuit breaker | Integration | Circuit breaker test |

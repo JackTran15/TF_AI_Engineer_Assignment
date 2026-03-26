@@ -32,15 +32,22 @@ Implement observability infrastructure (dashboards, metrics, alerts) and load te
   - Error rate by component (API, workers, RAG orchestrator, LLM calls)
   - HITL trigger rate
   - Citation coverage rate
+  - LLM input/output token usage and estimated cost per student
+  - Model-tier usage distribution (cheap vs balanced vs high-performance) by pipeline step
 - [ ] **SLO alerts:** Alerts fire when:
   - Recommendation P95 latency > 8 seconds
   - RAG retrieval availability drops below 99.9%
   - Profile indexing freshness lag > 5 minutes
   - Error rate > 1% sustained for 5 minutes
+- [ ] **Autoscaling policy alerts/monitors:** Recommendation worker scale-up condition is tracked for queue depth > `50` or processing P95 > `5s`; scale-down condition is tracked after `5` consecutive minutes of empty queue; max worker cap `10` is enforced.
 - [ ] **Load tests:** A load test suite exercises the system with:
   - 100 concurrent recommendation requests (baseline)
   - 1,000 concurrent requests (burst test)
   - Verify all requests complete within timeout
+- [ ] **Capacity benchmark checks:** Validate plan targets under representative environment:
+  - 1 worker, batch size 5: ~25 students/min (100 students drains in ~4 minutes)
+  - 3 workers, batch size 10: ~75 students/min (1,000 students drains in ~14 minutes)
+  - 10 workers, batch size 10: ~250 students/min (1,000 students drains in ~4 minutes)
 - [ ] **Batch size tuning:** Load test validates that batch size of 5-10 performs optimally:
   - Measure throughput at batch sizes 5, 7, 10
   - Document the optimal batch size for the tested hardware
@@ -113,6 +120,8 @@ scenarios:
 | RAG retrieval availability | >= 99.9% | < 99.9% | 30day rolling |
 | Profile indexing freshness | <= 5min | > 5min for any update | Per update |
 | Error rate | < 1% | > 1% sustained 5min | 5min rolling |
+| Recommendation worker P95 processing latency | <= 5s | > 5s (scale-up signal) | 5min rolling |
+| Recommendation queue depth | <= 50 msgs | > 50 (scale-up signal) | Near real-time |
 
 ## Dependencies
 
@@ -130,9 +139,12 @@ scenarios:
 ### Integration Tests
 - **Baseline load test (100 concurrent):** Submit 100 recommendation requests concurrently; verify all complete (status=completed or status=hitl_review) within the timeout window. Record P95 latency and verify < 8s.
 - **Burst load test (1,000 concurrent):** Ramp up to 1,000 concurrent requests; verify the system remains responsive (no hung requests). Verify queue backpressure is applied correctly. Record throughput and error rate.
+- **Autoscaling trigger checks:** Force queue depth > 50 and separately force worker processing latency P95 > 5s; verify autoscaling actions are emitted and bounded by max 10 workers.
 - **Batch size tuning:** Run the load test at batch sizes 5, 7, and 10; record throughput (recommendations/min) at each size. Document which size performs best.
+- **Capacity benchmark validation:** Run benchmark scenarios (1 worker @ batch 5, 3 workers @ batch 10, 10 workers @ batch 10); compare measured throughput and queue drain times against plan targets and document variance.
 - **Retry policy under LLM failure:** Inject 50% LLM failure rate; run 50 recommendations; verify exponential backoff is applied (check timestamps in DLQ messages). Verify at least 50% of requests still complete successfully (via deterministic fallback).
 - **Graceful degradation:** Block LLM endpoint entirely; submit 10 recommendations; verify all 10 produce results (deterministic ranking + fallback explanations).
+- **Model-tier policy verification:** Run mixed workloads and verify high-performance tier usage is limited to uncertainty-triggered cases while simple tasks stay on cheap tier.
 
 ### E2E / Manual Tests
 - **Dashboard review after load test:** After running the burst load test, open the monitoring dashboard. Verify:
@@ -152,7 +164,10 @@ scenarios:
 | AC: SLO alerts fire correctly | Unit + E2E | Threshold config + alert validation |
 | AC: 100 concurrent baseline test | Integration | Baseline load test |
 | AC: 1,000 concurrent burst test | Integration | Burst load test |
+| AC: Autoscaling depth/latency triggers tracked | Integration | Autoscaling trigger checks |
+| AC: Capacity benchmarks validated | Integration | Capacity benchmark validation |
 | AC: Batch size tuning (5-10) | Integration | Batch size tuning test |
+| AC: Model-tier usage is cost-optimized | Integration | Model-tier policy verification |
 | AC: Retry policy with exponential backoff | Integration | Retry policy under LLM failure |
 | AC: DLQ for unrecoverable failures | E2E/Manual | DLQ inspection |
 | AC: Graceful degradation during LLM outage | Integration | Graceful degradation test |

@@ -26,6 +26,32 @@ Implement in iterative phases with production-safe defaults:
 - Retry transient failures with exponential backoff.
 - Route hard failures to DLQ and support replay after correction.
 
+### Capacity Estimates
+
+Per-recommendation latency breakdown (P50):
+
+| Step | Latency | LLM Calls |
+|---|---|---|
+| Metadata filter + vector retrieval | ~50 ms | 0 |
+| Deterministic scoring (10 candidates) | ~15 ms | 0 |
+| LLM reranking (top-7 candidates) | ~800 ms | 1 |
+| Explanation generation (4 teachers) | ~1,200 ms | 4 (parallel) |
+| Citation validation | ~300 ms | 1 |
+| **Total per student** | **~2,400 ms** | **6** |
+
+Worker throughput (single `recommendationBatchWorker` instance):
+
+| Scenario | Batch Size | Parallelism | Throughput | Queue Drain Time |
+|---|---|---|---|---|
+| Baseline (1 worker) | 5 | 1 batch at a time | ~25 students/min | 100 students in ~4 min |
+| Scaled (3 workers) | 10 | 3 batches concurrent | ~75 students/min | 1,000 students in ~14 min |
+| Peak (10 workers) | 10 | 10 batches concurrent | ~250 students/min | 1,000 students in ~4 min |
+
+Scaling triggers:
+- Scale up when queue depth exceeds `50` messages or P95 processing latency exceeds `5s`.
+- Scale down when queue is empty for `5` consecutive minutes.
+- Maximum worker count capped at `10` to stay within LLM provider rate limits.
+
 ## 3) External API Constraints Plan
 
 ### Typical Constraints
@@ -40,6 +66,34 @@ Implement in iterative phases with production-safe defaults:
   - deterministic ranking remains available
   - explanation uses constrained template when LLM is unavailable
 - Optional secondary model provider for high availability.
+- Task-based model routing:
+  - cheap model tier for simple language tasks (cleanup, formatting, low-risk rewriting)
+  - balanced model tier for standard reranking and explanation generation
+  - high-performance model tier only for high-ambiguity, high-impact adjudication (for example citation disputes or contradictory HITL constraints)
+
+### LLM Cost Analysis
+
+Token estimates per recommendation (GPT-4o-class model):
+
+| LLM Call | Input Tokens | Output Tokens | Count per Student |
+|---|---|---|---|
+| Reranking (7 candidates) | ~2,000 | ~500 | 1 |
+| Explanation generation (per teacher) | ~800 | ~300 | 4 |
+| Citation validation | ~1,500 | ~400 | 1 |
+| **Total per student** | **~6,700** | **~2,100** | **6 calls** |
+
+Cost projections (at $2.50 / 1M input tokens, $10.00 / 1M output tokens):
+
+| Batch Size | Input Cost | Output Cost | Total Cost | Cost per Student |
+|---|---|---|---|---|
+| 100 students | $1.68 | $2.10 | **$3.78** | $0.038 |
+| 1,000 students | $16.75 | $21.00 | **$37.75** | $0.038 |
+
+Cost reduction levers:
+- **Template fallback:** When the LLM circuit breaker opens, skip reranking and explanation LLM calls. Use deterministic ranking + templated explanations. Reduces cost to ~$0 per student (no LLM calls).
+- **Smaller model for reranking:** Use a cheaper model (GPT-4o-mini at ~10x lower cost) for the reranking step, saving ~40% on total LLM cost.
+- **Cached explanations:** If a student-teacher pair has been recommended before and teacher profile has not changed (`profile_version` unchanged), reuse the cached explanation.
+- **Tiered escalation:** Invoke high-performance model tier only when uncertainty gates fail; default path remains cheap/balanced tiers.
 
 ## 4) Data Freshness Plan
 
@@ -70,6 +124,25 @@ Implement in iterative phases with production-safe defaults:
 ### Quality Gates
 - Do not publish result when critical citation checks fail.
 - Route low-confidence recommendations to HITL automatically.
+
+### Ground-Truth Methodology
+
+**Phase 1 — Bootstrapping (no labeled data):**
+- Use the deterministic scoring engine as a weak baseline. Rank all teachers for a set of synthetic student profiles and treat the top-4 as pseudo-labels.
+- Have internal subject-matter experts (sales team, education leads) manually label 50-100 student-teacher pairs as `good_match`, `acceptable`, or `poor_match`.
+- Compute `precision_at_4` and `ndcg_at_4` against expert labels to establish a baseline.
+
+**Phase 2 — Online feedback collection:**
+- Track implicit signals: recommendation acceptance rate (student clicks "Accept"), rematch request rate (student requests a different teacher within 7 days), and session completion rate.
+- Track explicit signals: post-session student rating (1-5) after the first 3 sessions with the matched teacher.
+- Label a recommendation as `positive` if the student does not request a rematch within 14 days and rates the teacher >= 4/5.
+
+**Phase 3 — A/B testing framework:**
+- Split incoming students into control (deterministic-only ranking) and treatment (deterministic + LLM reranking) groups.
+- Primary metric: recommendation acceptance rate lift.
+- Secondary metrics: rematch rate reduction, HITL trigger rate reduction, time-to-first-valid-recommendation improvement.
+- Minimum sample size: 200 students per arm for statistical significance at 95% confidence.
+- Run for at least 4 weeks to capture weekly seasonality effects.
 
 ## 6) Technical Selection Plan
 

@@ -35,6 +35,7 @@ The explanation drafts are then passed to the CitationAgent (TICKET-011) for evi
 - [ ] Empty or missing `bio` fields are handled gracefully without errors or hallucinated content.
 - [ ] Structured output parsing extracts the expected JSON schema from LLM response.
 - [ ] If LLM fails, a templated fallback explanation is generated from the deterministic score breakdown.
+- [ ] **Explanation cache reuse:** if the same `student_id` + `teacher_id` pair was previously generated and the teacher `profile_version` is unchanged, reuse cached explanation instead of issuing a new LLM call.
 - [ ] A `pipeline_trace_steps` entry records `step_name='explanation_generation'` with prompt, model, latency, and token usage.
 - [ ] Generation latency P95 is under 4 seconds for 4 explanations.
 
@@ -148,6 +149,8 @@ def generate_fallback_explanation(student, teacher, score_breakdown):
 - **Trace output:** After generation, query `pipeline_trace_steps` for `step_name='explanation_generation'`; verify the entry includes model, latency, and token count.
 - **Explanation persistence:** Verify each explanation is written to `recommendation_explanations` with correct `result_id` and `llm_model`.
 - **LLM failure fallback integration:** Block LLM endpoint; run explanation generation; verify 4 fallback explanations are produced from score breakdowns.
+- **Cache hit path:** Run explanation generation for the same student-teacher pair twice with unchanged `profile_version`; verify second run reuses stored explanation and no new LLM call is executed.
+- **Cache invalidation path:** Increment teacher `profile_version`; rerun explanation generation; verify cache miss and fresh explanation generation occurs.
 
 ### E2E / Manual Tests
 - **Factual consistency check for S002:** Read generated explanations for S002's top-1 match; manually compare each data point mentioned (e.g., "Math score of 92") against `teachers.json`; verify no hallucinated subjects, scores, or experience years.
@@ -163,6 +166,7 @@ def generate_fallback_explanation(student, teacher, score_breakdown):
 | AC: Handles empty bio gracefully | Unit | Prompt construction — empty bio |
 | AC: Structured output parsing works | Unit | Parsing + malformed response tests |
 | AC: Fallback when LLM fails | Unit + Integration | Fallback template + LLM failure integration |
+| AC: Reuse cached explanation when profile unchanged | Integration | Cache hit path test |
 | AC: Trace entry written | Integration | Trace output verification |
 | AC: P95 latency under 4s | Integration | Timing check during full generation |
 

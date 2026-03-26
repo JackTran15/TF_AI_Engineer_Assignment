@@ -15,6 +15,7 @@ Ref: `implementation-plan.md §7 Phase 3` — "Add confidence gates and HITL cas
 - [ai-pipeline.md — §5 Multi-Agent AI Design — OrchestratorAgent](../ai-pipeline.md): Coordinates agents and scoring pipeline, applies confidence threshold and HITL trigger.
 - [ai-pipeline.md — §5.1 Recommendation Runtime Contract](../ai-pipeline.md): Full 6-step workflow from execution plan to final output or HITL.
 - [ai-pipeline.md — §2 End-to-End Pipeline Flow](../ai-pipeline.md): Complete flowchart from student request to final output or HITL queue.
+- [ai-pipeline.md — §5.5 Model Routing and Cost Optimization](../ai-pipeline.md): Escalate model tier only for high-ambiguity, high-impact decisions.
 - [architecture.md — §6 Output Contract](../architecture.md): Expected JSON shape for `top_1` + `top_3_alternatives`.
 
 ## Description
@@ -33,6 +34,9 @@ Implement the `OrchestratorAgent` that coordinates the full recommendation pipel
 - [ ] Both pre-HITL and post-HITL traces are stored when a rerun occurs.
 - [ ] A `pipeline_trace_steps` entry records the full orchestration with all sub-step references.
 - [ ] Orchestration handles partial agent failures gracefully (e.g., CitationAgent down -> mark as needs_review).
+- [ ] **Task-aware model routing:** Orchestrator selects cheap/balanced/high-performance model tiers per step and context (simple post-processing vs normal ranking/explanations vs ambiguous high-impact adjudication).
+- [ ] **Escalation policy:** High-performance tier is invoked only when uncertainty gates fail (for example low citation coverage with conflicting evidence, contradictory HITL notes).
+- [ ] **Auditability:** Orchestration trace includes per-step `model_tier`, `model_name`, token usage, and escalation reason (when escalation occurs).
 
 ## Technical Details
 
@@ -113,6 +117,8 @@ def should_trigger_hitl(confidence_score, citation_coverage, config):
 - **Citation gate — fail:** Set `citation_coverage=0.90` and threshold 0.95; verify HITL trigger fires with reason `low_citation_coverage`.
 - **Output assembly:** Given 4 ranked teachers with explanations and citations; verify output matches the contract shape with `top_1` and `top_3_alternatives`.
 - **Partial agent failure:** Simulate CitationAgent timeout; verify orchestrator marks result as `needs_review` instead of crashing.
+- **Model routing policy:** Verify simple post-processing uses cheap tier, standard rerank/explain uses balanced tier, and uncertainty-triggered path escalates to high-performance tier.
+- **Escalation reason logging:** Trigger escalation path; verify trace stores escalation reason and selected model tier.
 
 ### Integration Tests
 - **Full orchestration for S002:** Run `orchestrate_recommendation(S002)` end-to-end; verify the output has 4 teachers with explanations and citations. Verify `recommendation_requests.status = 'completed'`.
@@ -140,6 +146,8 @@ def should_trigger_hitl(confidence_score, citation_coverage, config):
 | AC: Pre-HITL and post-HITL traces stored | E2E | HITL rerun test |
 | AC: Orchestration trace entry written | Integration | Trace completeness |
 | AC: Partial failure handled gracefully | Unit | Partial agent failure test |
+| AC: Task-aware model routing | Unit | Model routing policy test |
+| AC: Escalation is reasoned and traceable | Unit + Integration | Escalation reason logging + trace completeness |
 
 ## Dataset References
 

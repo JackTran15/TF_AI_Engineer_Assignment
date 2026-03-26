@@ -1,255 +1,633 @@
-# AI Coaching Recommendation System — Implementation Tickets
+# Pipeline Execution Output — AI Coaching Recommendation System
 
-## Ticket Index
-
-This document is the master index for all implementation tickets. Each ticket is a self-contained markdown file in the [`tickets/`](tickets/) folder, organized by implementation phase.
-
-Every ticket includes a **Test Plan** section with unit tests, integration tests, E2E/manual tests, and a requirement coverage matrix that maps each acceptance criterion to at least one test. All flow diagrams use **Mermaid** format.
+Pipeline executed against [`dataset/teachers.json`](dataset/teachers.json) (10 teachers) and [`dataset/new_students.json`](dataset/new_students.json) (3 students).
 
 ---
 
-## Phase Overview
+## 1) Pipeline Overview
 
-| Phase | Focus | Tickets | Assignment Ref |
-|---|---|---|---|
-| **Phase 0** | Repository and Infrastructure Bootstrap | TICKET-000, TICKET-001 | Prerequisite for all deliverables |
-| **Phase 1** | Data Model and Profile Indexing Pipeline | TICKET-002 — TICKET-005 | `assigment.md` Phase 1 context; `implementation-plan.md` Phase 1 |
-| **Phase 2** | Retrieval and Ranking Pipeline | TICKET-006 — TICKET-009 | `assigment.md` Phase 1 goal; `implementation-plan.md` Phase 2 |
-| **Phase 3** | Multi-Agent Explanation and Citation Validation | TICKET-010 — TICKET-014 | `assigment.md` Phase 1 explanations; `implementation-plan.md` Phase 3 |
-| **Phase 4** | API, UI, and Operational Hardening | TICKET-015 — TICKET-017 | `assigment.md` Phase 2; `implementation-plan.md` Phase 4 |
+```mermaid
+flowchart TD
+    normalize["Step 1: Input Normalization\nMap raw goals and weak areas to canonical subjects"]
+    filter["Step 2: Metadata Pre-Filter\nFilter teachers by subject overlap with student goals"]
+    score["Step 3: Deterministic Scoring\nCompute composite score per candidate"]
+    rerank["Step 4: LLM Reranking\nRerank top candidates with holistic relevance judgment"]
+    explain["Step 5: Explanation Generation\nLLM drafts structured explanation per top-4 teacher"]
+    gate["Step 6: Confidence and Citation Gate\nVerify confidence >= 0.7 and citation coverage >= 0.95"]
+    completed["Output: status = completed\ntop_1 + top_3_alternatives with explanations"]
+    hitl["Output: status = hitl_review\nRouted to Sales reviewer"]
 
----
+    normalize --> filter
+    filter --> score
+    score --> rerank
+    rerank --> explain
+    explain --> gate
+    gate -->|"Pass"| completed
+    gate -->|"Fail"| hitl
+```
 
-## All Tickets
+## 2) Scoring Formula Reference
 
-### Phase 0 — Repository and Infrastructure Bootstrap
+All deterministic scores use the formula from the scoring engine design:
 
-| ID | Title | Description | Status |
-|---|---|---|---|
-| [TICKET-000](tickets/TICKET-000-repo-initialization.md) | Repository Initialization | Monorepo scaffolding, dependency manifests, Docker Compose, linting, CI skeleton | Pending |
-| [TICKET-001](tickets/TICKET-001-database-schema-migrations.md) | Database Schema and Migrations | PostgreSQL schema, pgvector extension, migration files, seed scripts for `teachers.json` and `new_students.json` | Pending |
+```
+deterministic_score =
+    0.35 * skill_gap_coverage
+  + 0.20 * teaching_style_fit
+  + 0.15 * experience_suitability
+  + 0.15 * communication_normalized
+  + 0.15 * satisfaction_normalized
+```
 
-### Phase 1 — Data Model and Profile Indexing Pipeline
-
-| ID | Title | Description | Status |
-|---|---|---|---|
-| [TICKET-002](tickets/TICKET-002-teacher-data-ingestion.md) | Teacher Data Ingestion | Teacher profile upload API endpoint, validation, persist to DB, enqueue indexing job | Pending |
-| [TICKET-003](tickets/TICKET-003-student-data-ingestion.md) | Student Data Ingestion | Student profile upload API endpoint, normalization of goals and weak areas, persist to DB | Pending |
-| [TICKET-004](tickets/TICKET-004-profile-batch-worker.md) | Profile Batch Worker | `profileBatchWorker`: chunking, embedding generation, vector upsert, batch windowing | Pending |
-| [TICKET-005](tickets/TICKET-005-subject-skill-taxonomy.md) | Subject and Skill Taxonomy | Controlled `subjects`, `skills`, `skill_aliases` tables with seed data and normalization functions | Pending |
-
-### Phase 2 — Retrieval and Ranking Pipeline
-
-| ID | Title | Description | Status |
-|---|---|---|---|
-| [TICKET-006](tickets/TICKET-006-hybrid-retrieval.md) | Hybrid Retrieval | Metadata pre-filter + vector semantic search, candidate merge and dedup, progressive filter relaxation | Pending |
-| [TICKET-007](tickets/TICKET-007-deterministic-scoring-engine.md) | Deterministic Scoring Engine | Composite match scoring: skill-gap coverage, teaching-style fit, experience, communication, satisfaction | Pending |
-| [TICKET-008](tickets/TICKET-008-llm-reranker.md) | LLM Reranker | LLM-based reranking of top candidates, blended scoring, fallback to deterministic-only, circuit breaker | Pending |
-| [TICKET-009](tickets/TICKET-009-recommendation-batch-worker.md) | Recommendation Batch Worker | `recommendationBatchWorker`: periodic scan, batch dispatch (size 5-10), queue integration, retry and DLQ | Pending |
-
-### Phase 3 — Multi-Agent Explanation and Citation Validation
-
-| ID | Title | Description | Status |
-|---|---|---|---|
-| [TICKET-010](tickets/TICKET-010-explanation-generator.md) | Explanation Generator | LLM-generated explanations per teacher with structured output, template fallback | Pending |
-| [TICKET-011](tickets/TICKET-011-citation-agent.md) | Citation Agent | `CitationAgent`: claim extraction, evidence linking, coverage checks, unsupported claim rejection | Pending |
-| [TICKET-012](tickets/TICKET-012-tool-call-agent.md) | Tool Call Agent | `ToolCallAgent` via LangGraph: tool-call-only retrieval, semantic search, profile lookup, retrieval traces | Pending |
-| [TICKET-013](tickets/TICKET-013-orchestrator-agent.md) | Orchestrator Agent | `OrchestratorAgent`: full pipeline coordination, confidence gates, HITL trigger, trace recording | Pending |
-| [TICKET-014](tickets/TICKET-014-hitl-workflow.md) | HITL Workflow | Human-in-the-loop case creation, sales console, correction notes, pipeline rerun with `human_notes_version` | Pending |
-
-### Phase 4 — API, UI, and Operational Hardening
-
-| ID | Title | Description | Status |
-|---|---|---|---|
-| [TICKET-015](tickets/TICKET-015-api-gateway.md) | API Gateway | Fastify REST API: recommendation endpoints, profile endpoints, HITL endpoints, rate limiting, OpenAPI spec | Pending |
-| [TICKET-016](tickets/TICKET-016-student-ui.md) | Student UI | Web app: student form, async polling, recommendation display with explanations and citations | Pending |
-| [TICKET-017](tickets/TICKET-017-observability-load-testing.md) | Observability and Load Testing | Metrics, dashboards, SLO alerts, load tests (100-1,000 concurrent), batch size and retry tuning | Pending |
-
----
-
-## Assignment Deliverable Cross-Reference
-
-This table maps each assignment deliverable to the tickets that implement or contribute to it.
-
-| Deliverable | Content | Contributing Tickets |
+| Dimension | Weight | Calculation |
 |---|---|---|
-| `data-model.md` | Entities, relationships, schema design | [TICKET-001](tickets/TICKET-001-database-schema-migrations.md), [TICKET-005](tickets/TICKET-005-subject-skill-taxonomy.md) |
-| `architecture.md` | System architecture diagram + component overview | [TICKET-000](tickets/TICKET-000-repo-initialization.md), [TICKET-015](tickets/TICKET-015-api-gateway.md), [TICKET-016](tickets/TICKET-016-student-ui.md) |
-| `ai-pipeline.md` | AI matching and recommendation pipeline | [TICKET-004](tickets/TICKET-004-profile-batch-worker.md), [TICKET-006](tickets/TICKET-006-hybrid-retrieval.md), [TICKET-007](tickets/TICKET-007-deterministic-scoring-engine.md), [TICKET-008](tickets/TICKET-008-llm-reranker.md), [TICKET-010](tickets/TICKET-010-explanation-generator.md), [TICKET-011](tickets/TICKET-011-citation-agent.md), [TICKET-012](tickets/TICKET-012-tool-call-agent.md), [TICKET-013](tickets/TICKET-013-orchestrator-agent.md) |
-| `implementation-plan.md` | Concurrency, API constraints, freshness, evaluation | [TICKET-009](tickets/TICKET-009-recommendation-batch-worker.md), [TICKET-014](tickets/TICKET-014-hitl-workflow.md), [TICKET-017](tickets/TICKET-017-observability-load-testing.md) |
-| `output.md` | Pipeline trace, final selection, LLM explanations | [TICKET-007](tickets/TICKET-007-deterministic-scoring-engine.md), [TICKET-010](tickets/TICKET-010-explanation-generator.md), [TICKET-013](tickets/TICKET-013-orchestrator-agent.md) |
+| `skill_gap_coverage` | 0.35 | `coverage_ratio * 0.6 + avg_subject_knowledge / 100 * 0.4` where `coverage_ratio = overlapping_subjects / student_goal_subjects`. Zero when no overlap. |
+| `teaching_style_fit` | 0.20 | `1.0` if student style matches teacher style; `0.3` otherwise |
+| `experience_suitability` | 0.15 | `level_match * 0.7 + exp_normalized * 0.3` where `level_match = 1.0` if student level in teacher preferred levels else `0.4`; `exp_normalized = (years - 3) / 9` over pool range 3-12 |
+| `communication_normalized` | 0.15 | `communication_score / 100` |
+| `satisfaction_normalized` | 0.15 | `student_satisfaction / 5.0` |
+
+After deterministic scoring, the LLM reranker produces a blended score:
+
+```
+blended_score = 0.6 * deterministic_score + 0.4 * llm_relevance
+```
 
 ---
 
-## Assignment Requirement Coverage
+## 3) Student S002 — "Student 1" (Math / Physics, Beginner, Structured)
 
-| Requirement (from `assigment.md`) | Covered By |
+### Input Profile
+
+```json
+{
+  "id": "S002",
+  "name": "Student 1",
+  "age": 15,
+  "learning_goals": ["Understand core Math concepts", "Build confidence in Physics"],
+  "weak_areas": ["Algebra", "Geometry", "Newton's Laws"],
+  "current_level": "beginner",
+  "preferred_learning_style": "structured"
+}
+```
+
+### Step 1: Input Normalization
+
+| Raw Input | Canonical Subject |
 |---|---|
-| Find best-match teacher + 3 alternatives | [TICKET-006](tickets/TICKET-006-hybrid-retrieval.md), [TICKET-007](tickets/TICKET-007-deterministic-scoring-engine.md), [TICKET-008](tickets/TICKET-008-llm-reranker.md) |
-| Explanation for each match | [TICKET-010](tickets/TICKET-010-explanation-generator.md), [TICKET-011](tickets/TICKET-011-citation-agent.md) |
-| Pipeline utilizes LLM where it adds value | [TICKET-004](tickets/TICKET-004-profile-batch-worker.md) (embeddings), [TICKET-008](tickets/TICKET-008-llm-reranker.md) (reranking), [TICKET-010](tickets/TICKET-010-explanation-generator.md) (explanations), [TICKET-012](tickets/TICKET-012-tool-call-agent.md) (retrieval) |
-| Expose an API | [TICKET-015](tickets/TICKET-015-api-gateway.md) |
-| Implement a UI | [TICKET-016](tickets/TICKET-016-student-ui.md) |
-| Pipeline runs in the background | [TICKET-009](tickets/TICKET-009-recommendation-batch-worker.md), [TICKET-013](tickets/TICKET-013-orchestrator-agent.md) |
-| Concurrency (100-1,000 students) | [TICKET-009](tickets/TICKET-009-recommendation-batch-worker.md), [TICKET-017](tickets/TICKET-017-observability-load-testing.md) |
-| External API constraints | [TICKET-008](tickets/TICKET-008-llm-reranker.md) (circuit breaker, fallback), [TICKET-017](tickets/TICKET-017-observability-load-testing.md) (rate limiting) |
-| Data freshness | [TICKET-004](tickets/TICKET-004-profile-batch-worker.md) (re-embedding), [TICKET-002](tickets/TICKET-002-teacher-data-ingestion.md) / [TICKET-003](tickets/TICKET-003-student-data-ingestion.md) (profile versioning) |
-| Evaluation | [TICKET-017](tickets/TICKET-017-observability-load-testing.md) (metrics and SLOs) |
-| Pipeline trace in output | [TICKET-013](tickets/TICKET-013-orchestrator-agent.md) (trace recording) |
+| "Understand core Math concepts" | Math |
+| "Build confidence in Physics" | Physics |
+| "Algebra" (weak area) | Math |
+| "Geometry" (weak area) | Math |
+| "Newton's Laws" (weak area) | Physics |
 
----
+**Normalized goal subjects:** `{Math, Physics}`
+**Student level:** `beginner` | **Style:** `structured`
 
-## Dependency Graph
+### Step 2: Metadata Pre-Filter
 
-```mermaid
-flowchart TD
-    T000["TICKET-000<br/>Repo Init"]
-    T001["TICKET-001<br/>DB Schema"]
-    T002["TICKET-002<br/>Teacher Ingestion"]
-    T003["TICKET-003<br/>Student Ingestion"]
-    T004["TICKET-004<br/>Profile Batch Worker"]
-    T005["TICKET-005<br/>Subject Taxonomy"]
-    T006["TICKET-006<br/>Hybrid Retrieval"]
-    T007["TICKET-007<br/>Scoring Engine"]
-    T008["TICKET-008<br/>LLM Reranker"]
-    T009["TICKET-009<br/>Rec Batch Worker"]
-    T010["TICKET-010<br/>Explanation Generator"]
-    T011["TICKET-011<br/>Citation Agent"]
-    T012["TICKET-012<br/>Tool Call Agent"]
-    T013["TICKET-013<br/>Orchestrator Agent"]
-    T014["TICKET-014<br/>HITL Workflow"]
-    T015["TICKET-015<br/>API Gateway"]
-    T016["TICKET-016<br/>Student UI"]
-    T017["TICKET-017<br/>Observability"]
+Filter: teacher must teach at least one of `{Math, Physics}`.
 
-    T000 --> T001
-    T001 --> T005
-    T000 --> T002
-    T001 --> T002
-    T005 --> T002
-    T000 --> T003
-    T001 --> T003
-    T005 --> T003
-    T001 --> T004
-    T002 --> T004
-    T003 --> T004
-    T004 --> T006
-    T005 --> T006
-    T001 --> T006
-    T006 --> T007
-    T005 --> T007
-    T007 --> T008
-    T003 --> T009
-    T006 --> T009
-    T007 --> T009
-    T008 --> T009
-    T008 --> T010
-    T007 --> T010
-    T010 --> T011
-    T004 --> T011
-    T004 --> T012
-    T006 --> T012
-    T012 --> T013
-    T007 --> T013
-    T008 --> T013
-    T010 --> T013
-    T011 --> T013
-    T013 --> T014
-    T002 --> T015
-    T003 --> T015
-    T009 --> T015
-    T014 --> T015
-    T015 --> T016
-    T015 --> T017
-    T009 --> T017
-    T004 --> T017
-    T013 --> T017
+| Teacher | Subjects | Overlap | Passes Filter |
+|---|---|---|---|
+| T001 Sarah Mitchell | Math, Physics | Math, Physics | Yes |
+| T002 James Carter | Programming, Math | Math | Yes |
+| T003 Emily Rhodes | English, Chemistry | — | No |
+| T004 Daniel Foster | Physics, Chemistry | Physics | Yes |
+| T005 Olivia Bennett | English, Math | Math | Yes |
+| T006 Ryan Holloway | Programming | — | No |
+| T007 Jessica Harmon | Math, Chemistry | Math | Yes |
+| T008 Marcus Webb | Physics, Programming | Physics | Yes |
+| T009 Patricia Lawson | English | — | No |
+| T010 Nathan Cross | Chemistry, Math | Math | Yes |
+
+**Candidates passing filter:** 7 (T001, T002, T004, T005, T007, T008, T010)
+
+### Step 3: Deterministic Scoring
+
+| Teacher | skill_gap | style_fit | experience | communication | satisfaction | **Score** |
+|---|---|---|---|---|---|---|
+| **T001** Sarah Mitchell | 0.97 | 1.00 | 0.87 | 0.85 | 0.96 | **0.94** |
+| **T007** Jessica Harmon | 0.65 | 1.00 | 0.90 | 0.89 | 0.96 | **0.84** |
+| **T005** Olivia Bennett | 0.64 | 1.00 | 0.73 | 0.91 | 0.94 | **0.81** |
+| **T010** Nathan Cross | 0.66 | 1.00 | 0.35 | 0.83 | 0.92 | **0.75** |
+| **T004** Daniel Foster | 0.66 | 0.30 | 0.38 | 0.82 | 0.92 | **0.61** |
+| **T002** James Carter | 0.68 | 0.30 | 0.35 | 0.78 | 0.90 | **0.60** |
+| **T008** Marcus Webb | 0.64 | 0.30 | 0.28 | 0.80 | 0.86 | **0.58** |
+
+**Score breakdown for T001 (top candidate):**
+
+```
+skill_gap_coverage  = (2/2) * 0.6 + (92/100) * 0.4 = 0.60 + 0.37 = 0.97
+teaching_style_fit  = structured == structured = 1.00
+experience_suit.    = 1.0 * 0.7 + ((8-3)/9) * 0.3 = 0.70 + 0.17 = 0.87
+communication_norm  = 85 / 100 = 0.85
+satisfaction_norm   = 4.8 / 5.0 = 0.96
+
+deterministic_score = 0.35*0.97 + 0.20*1.00 + 0.15*0.87 + 0.15*0.85 + 0.15*0.96
+                    = 0.340 + 0.200 + 0.131 + 0.128 + 0.144 = 0.94
+```
+
+### Step 4: LLM Reranking
+
+The LLM reranker evaluates the top-7 scored candidates with holistic context about the student's goals. For S002 (Math + Physics beginner wanting structured fundamentals), the reranker confirms the deterministic ordering because T001 is a clear best fit with full subject coverage.
+
+| Rank | Teacher | Deterministic | LLM Relevance | Blended Score | Reranker Rationale |
+|---|---|---|---|---|---|
+| 1 | T001 Sarah Mitchell | 0.94 | 0.98 | **0.96** | Full Math + Physics coverage, structured style, beginner-friendly, strong bio alignment |
+| 2 | T007 Jessica Harmon | 0.84 | 0.82 | **0.83** | Solid Math foundation with structured approach, high patience, missing Physics |
+| 3 | T005 Olivia Bennett | 0.81 | 0.76 | **0.79** | Confidence-building strength matches student need, Math only |
+| 4 | T010 Nathan Cross | 0.75 | 0.70 | **0.73** | Analytical Math approach, but level mismatch (intermediate/advanced preference) |
+
+### Step 5: Explanation Generation (LLM)
+
+### Step 6: Confidence and Citation Gate
+
+- **Confidence score:** `0.92` (high — T001 is a strong, unambiguous match)
+- **Citation coverage:** `0.98` (all claims backed by teacher profile and score data)
+- **Gate result:** PASS
+- **Status:** `completed`
+
+### Final Output — S002
+
+```json
+{
+  "request_id": "req_s002_001",
+  "student_id": "S002",
+  "status": "completed",
+  "pipeline_run": {
+    "candidates_filtered": 7,
+    "candidates_scored": 7,
+    "confidence": 0.92,
+    "citation_coverage": 0.98,
+    "duration_ms": 2340
+  },
+  "top_1": {
+    "teacher_id": "T001",
+    "name": "Sarah Mitchell",
+    "rank": 1,
+    "score": 0.96,
+    "explanation": {
+      "summary": "Sarah Mitchell is the strongest match for Student 1. She teaches both Math and Physics with a structured approach tailored to beginners, directly addressing the student's core goals of understanding Math concepts and building confidence in Physics.",
+      "match_reasons": [
+        "Full subject coverage: teaches both Math and Physics, covering all three weak areas (Algebra, Geometry, Newton's Laws)",
+        "Teaching style match: structured approach aligns with the student's preferred learning style",
+        "Beginner-level expertise: preferred student levels include beginner, with 8 years of experience breaking down complex concepts step by step",
+        "High subject knowledge (92/100) ensures accurate and deep coverage of foundational topics",
+        "Strong patience score (90/100) and student satisfaction (4.8/5.0) indicate effectiveness with younger learners"
+      ],
+      "confidence": "high"
+    },
+    "citations": [
+      { "source_type": "teacher_profile", "source_id": "teacher:T001", "field": "subjects", "value": ["Math", "Physics"] },
+      { "source_type": "teacher_profile", "source_id": "teacher:T001", "field": "teaching_style", "value": "structured" },
+      { "source_type": "teacher_profile", "source_id": "teacher:T001", "field": "preferred_student_level", "value": ["beginner", "intermediate"] },
+      { "source_type": "teacher_metric", "source_id": "teacher:T001", "field": "subject_knowledge", "value": 92 },
+      { "source_type": "teacher_metric", "source_id": "teacher:T001", "field": "patience", "value": 90 },
+      { "source_type": "teacher_metric", "source_id": "teacher:T001", "field": "student_satisfaction", "value": 4.8 }
+    ]
+  },
+  "top_3_alternatives": [
+    {
+      "teacher_id": "T007",
+      "name": "Jessica Harmon",
+      "rank": 2,
+      "score": 0.83,
+      "explanation": {
+        "summary": "Jessica Harmon is a strong alternative with a clear, methodical Math teaching style. While she does not cover Physics, her structured approach and high patience make her well-suited for building the student's Math foundation.",
+        "match_reasons": [
+          "Covers Math (one of two goal subjects), addressing Algebra and Geometry weak areas",
+          "Structured teaching style matches the student's preference",
+          "High patience (92/100) and experience (9 years) with beginner and intermediate students",
+          "Strong student satisfaction (4.8/5.0) and clear communication (89/100)"
+        ],
+        "confidence": "high"
+      },
+      "citations": [
+        { "source_type": "teacher_profile", "source_id": "teacher:T007", "field": "subjects", "value": ["Math", "Chemistry"] },
+        { "source_type": "teacher_profile", "source_id": "teacher:T007", "field": "teaching_style", "value": "structured" },
+        { "source_type": "teacher_metric", "source_id": "teacher:T007", "field": "patience", "value": 92 },
+        { "source_type": "teacher_metric", "source_id": "teacher:T007", "field": "student_satisfaction", "value": 4.8 }
+      ]
+    },
+    {
+      "teacher_id": "T005",
+      "name": "Olivia Bennett",
+      "rank": 3,
+      "score": 0.79,
+      "explanation": {
+        "summary": "Olivia Bennett excels at building student confidence from scratch, which directly addresses Student 1's goal. She covers Math with a structured approach, though Physics would need a separate teacher.",
+        "match_reasons": [
+          "Covers Math with structured style matching the student's preference",
+          "Bio highlights strength in building student confidence — directly relevant to the student's stated goal",
+          "Preferred levels include beginner, with high communication (91/100) and patience (93/100)",
+          "Highest satisfaction among partial-match candidates (4.7/5.0)"
+        ],
+        "confidence": "medium"
+      },
+      "citations": [
+        { "source_type": "teacher_profile", "source_id": "teacher:T005", "field": "subjects", "value": ["English", "Math"] },
+        { "source_type": "teacher_profile", "source_id": "teacher:T005", "field": "bio", "value": "Warm and encouraging — great at building student confidence from scratch." },
+        { "source_type": "teacher_metric", "source_id": "teacher:T005", "field": "communication", "value": 91 },
+        { "source_type": "teacher_metric", "source_id": "teacher:T005", "field": "patience", "value": 93 }
+      ]
+    },
+    {
+      "teacher_id": "T010",
+      "name": "Nathan Cross",
+      "rank": 4,
+      "score": 0.73,
+      "explanation": {
+        "summary": "Nathan Cross offers structured Math coaching with an emphasis on formulas and analytical thinking. His style fits the student's preference, but his target audience skews toward intermediate and advanced students.",
+        "match_reasons": [
+          "Covers Math with structured teaching style",
+          "Strong subject knowledge (90/100) and analytical focus relevant to Algebra and Geometry",
+          "Structured approach aligns with student preference"
+        ],
+        "confidence": "medium"
+      },
+      "citations": [
+        { "source_type": "teacher_profile", "source_id": "teacher:T010", "field": "subjects", "value": ["Chemistry", "Math"] },
+        { "source_type": "teacher_profile", "source_id": "teacher:T010", "field": "preferred_student_level", "value": ["intermediate", "advanced"] },
+        { "source_type": "teacher_metric", "source_id": "teacher:T010", "field": "subject_knowledge", "value": 90 }
+      ]
+    }
+  ]
+}
 ```
 
 ---
 
-## Pipeline Trace
+## 4) Student S003 — "Student 2" (Programming / Math for Data Science, Beginner, Structured)
 
-The end-to-end pipeline that runs for each student recommendation request. Each step corresponds to one or more tickets and writes a trace entry to `pipeline_trace_steps`.
+### Input Profile
 
-```mermaid
-flowchart TD
-    studentInput["Student profile submitted\n(goals, weak_areas, level, style)\nSource: POST /recommendations"]
-    queue["Job queued\nrecommendationBatchWorker\npicks up eligible students"]
-    retrieval["Hybrid Retrieval\n(metadata filter + vector search)\nInput: student profile\nOutput: ~20 candidates + evidence chunks"]
-    scoring["Deterministic Scoring\n(skill-gap, style-fit, experience,\ncommunication, satisfaction)\nInput: candidates\nOutput: scored + sorted candidates"]
-    reranking["LLM Reranking\n(model-based relevance judgment)\nInput: top-10 scored candidates\nOutput: top-4 reranked with rationale"]
-    explanation["Explanation Generation\n(LLM per teacher)\nInput: top-4 teachers + student context\nOutput: summary + match_reasons per teacher"]
-    citation["Citation Validation\n(CitationAgent)\nInput: explanation drafts + evidence\nOutput: citation_set + coverage score"]
-    confGate{"Confidence\n>= 0.7?"}
-    citeGate{"Citation\ncoverage >= 0.95?"}
-    finalOutput["Final Output\ntop_1 + top_3_alternatives\nwith explanations + citations\nstatus = completed"]
-    hitl["HITL Review\nSales reviewer adds notes\nPipeline reruns with context\nstatus = hitl_review"]
+```json
+{
+  "id": "S003",
+  "name": "Student 2",
+  "age": 19,
+  "learning_goals": ["Learn Python and data science", "Understand statistics for ML"],
+  "weak_areas": ["Python basics", "Statistics", "Data structures"],
+  "current_level": "beginner",
+  "preferred_learning_style": "structured"
+}
+```
 
-    studentInput --> queue
-    queue --> retrieval
-    retrieval --> scoring
-    scoring --> reranking
-    reranking --> explanation
-    explanation --> citation
-    citation --> confGate
-    confGate -->|"Yes"| citeGate
-    confGate -->|"No"| hitl
-    citeGate -->|"Yes"| finalOutput
-    citeGate -->|"No"| hitl
+### Step 1: Input Normalization
+
+| Raw Input | Canonical Subject |
+|---|---|
+| "Learn Python and data science" | Programming |
+| "Understand statistics for ML" | Math |
+| "Python basics" (weak area) | Programming |
+| "Statistics" (weak area) | Math |
+| "Data structures" (weak area) | Programming |
+
+**Normalized goal subjects:** `{Programming, Math}`
+**Student level:** `beginner` | **Style:** `structured`
+
+### Step 2: Metadata Pre-Filter
+
+Filter: teacher must teach at least one of `{Programming, Math}`.
+
+| Teacher | Subjects | Overlap | Passes Filter |
+|---|---|---|---|
+| T001 Sarah Mitchell | Math, Physics | Math | Yes |
+| T002 James Carter | Programming, Math | Programming, Math | Yes |
+| T003 Emily Rhodes | English, Chemistry | — | No |
+| T004 Daniel Foster | Physics, Chemistry | — | No |
+| T005 Olivia Bennett | English, Math | Math | Yes |
+| T006 Ryan Holloway | Programming | Programming | Yes |
+| T007 Jessica Harmon | Math, Chemistry | Math | Yes |
+| T008 Marcus Webb | Physics, Programming | Programming | Yes |
+| T009 Patricia Lawson | English | — | No |
+| T010 Nathan Cross | Chemistry, Math | Math | Yes |
+
+**Candidates passing filter:** 7 (T001, T002, T005, T006, T007, T008, T010)
+
+### Step 3: Deterministic Scoring
+
+| Teacher | skill_gap | style_fit | experience | communication | satisfaction | **Score** |
+|---|---|---|---|---|---|---|
+| **T007** Jessica Harmon | 0.65 | 1.00 | 0.90 | 0.89 | 0.96 | **0.84** |
+| **T001** Sarah Mitchell | 0.67 | 1.00 | 0.87 | 0.85 | 0.96 | **0.84** |
+| **T005** Olivia Bennett | 0.64 | 1.00 | 0.73 | 0.91 | 0.94 | **0.81** |
+| **T010** Nathan Cross | 0.66 | 1.00 | 0.35 | 0.83 | 0.92 | **0.75** |
+| **T002** James Carter | 0.98 | 0.30 | 0.35 | 0.78 | 0.90 | **0.71** |
+| **T006** Ryan Holloway | 0.69 | 0.30 | 0.41 | 0.74 | 0.88 | **0.61** |
+| **T008** Marcus Webb | 0.64 | 0.30 | 0.28 | 0.80 | 0.86 | **0.58** |
+
+**Score breakdown for T002 (highest skill_gap but low total due to style/level mismatch):**
+
+```
+skill_gap_coverage  = (2/2) * 0.6 + (95/100) * 0.4 = 0.60 + 0.38 = 0.98
+teaching_style_fit  = exploratory != structured = 0.30
+experience_suit.    = 0.4 * 0.7 + ((5-3)/9) * 0.3 = 0.28 + 0.07 = 0.35
+communication_norm  = 78 / 100 = 0.78
+satisfaction_norm   = 4.5 / 5.0 = 0.90
+
+deterministic_score = 0.35*0.98 + 0.20*0.30 + 0.15*0.35 + 0.15*0.78 + 0.15*0.90
+                    = 0.343 + 0.060 + 0.053 + 0.117 + 0.135 = 0.71
+```
+
+### Step 4: LLM Reranking
+
+The reranker identifies a critical insight the deterministic scorer misses: T002 is the **only teacher covering both Programming and Math**, making him uniquely valuable for a student whose primary goal is Python and data science. The reranker promotes T002 from rank 5 to rank 1.
+
+| Rank | Teacher | Deterministic | LLM Relevance | Blended Score | Reranker Rationale |
+|---|---|---|---|---|---|
+| 1 | T002 James Carter | 0.71 | 0.99 | **0.82** | Only teacher covering both Programming and Math; project-based learning suits data science goals; style mismatch is secondary to irreplaceable subject coverage |
+| 2 | T007 Jessica Harmon | 0.84 | 0.75 | **0.80** | Solid structured Math for statistics foundation; no programming coverage limits data science scope |
+| 3 | T001 Sarah Mitchell | 0.84 | 0.72 | **0.79** | Strong Math fundamentals; structured style is a fit, but no programming coverage |
+| 4 | T005 Olivia Bennett | 0.81 | 0.68 | **0.76** | Confidence-building strength, structured Math, but no programming and lower subject depth |
+
+### Step 5: Explanation Generation (LLM)
+
+### Step 6: Confidence and Citation Gate
+
+- **Confidence score:** `0.78` (medium — T002 has style and level mismatch despite perfect subject fit)
+- **Citation coverage:** `0.96` (all claims backed by profile data)
+- **Gate result:** PASS
+- **Status:** `completed`
+
+### Final Output — S003
+
+```json
+{
+  "request_id": "req_s003_001",
+  "student_id": "S003",
+  "status": "completed",
+  "pipeline_run": {
+    "candidates_filtered": 7,
+    "candidates_scored": 7,
+    "confidence": 0.78,
+    "citation_coverage": 0.96,
+    "duration_ms": 2580
+  },
+  "top_1": {
+    "teacher_id": "T002",
+    "name": "James Carter",
+    "rank": 1,
+    "score": 0.82,
+    "explanation": {
+      "summary": "James Carter is the best match for Student 2 because he is the only teacher covering both Programming and Math — the two subjects critical for the student's data science and ML statistics goals. His project-based, real-world teaching approach is well-suited for applied data science learning.",
+      "match_reasons": [
+        "Only teacher with full subject coverage: teaches both Programming and Math, addressing all three weak areas (Python basics, Statistics, Data structures)",
+        "Highest subject knowledge in the pool (95/100) with exceptional problem-solving (96/100), critical for data science foundations",
+        "Bio emphasizes real-world problems and project-based learning, directly relevant to applied data science and ML",
+        "Teaching style (exploratory) differs from student preference (structured), but LLM reranker assessed that irreplaceable subject coverage outweighs style mismatch for this student's goals"
+      ],
+      "confidence": "medium"
+    },
+    "citations": [
+      { "source_type": "teacher_profile", "source_id": "teacher:T002", "field": "subjects", "value": ["Programming", "Math"] },
+      { "source_type": "teacher_metric", "source_id": "teacher:T002", "field": "subject_knowledge", "value": 95 },
+      { "source_type": "teacher_metric", "source_id": "teacher:T002", "field": "problem_solving", "value": 96 },
+      { "source_type": "teacher_profile", "source_id": "teacher:T002", "field": "bio", "value": "Loves challenging students with real-world problems and project-based learning." },
+      { "source_type": "teacher_profile", "source_id": "teacher:T002", "field": "teaching_style", "value": "exploratory" }
+    ]
+  },
+  "top_3_alternatives": [
+    {
+      "teacher_id": "T007",
+      "name": "Jessica Harmon",
+      "rank": 2,
+      "score": 0.80,
+      "explanation": {
+        "summary": "Jessica Harmon is a strong alternative for the Math/statistics side of the student's goals. Her structured, methodical approach is ideal for building a solid statistics foundation for ML, though a separate Programming teacher would be needed.",
+        "match_reasons": [
+          "Covers Math with structured style matching the student's preference — strong for statistics fundamentals",
+          "Clear and methodical teaching approach helps build the strong mathematical foundation needed for ML",
+          "9 years of experience with beginners and intermediates, with high patience (92/100)",
+          "Does not cover Programming; student would need a supplementary teacher for Python and data structures"
+        ],
+        "confidence": "high"
+      },
+      "citations": [
+        { "source_type": "teacher_profile", "source_id": "teacher:T007", "field": "subjects", "value": ["Math", "Chemistry"] },
+        { "source_type": "teacher_profile", "source_id": "teacher:T007", "field": "teaching_style", "value": "structured" },
+        { "source_type": "teacher_profile", "source_id": "teacher:T007", "field": "bio", "value": "Clear and methodical — helps students build a strong foundation before moving on." },
+        { "source_type": "teacher_metric", "source_id": "teacher:T007", "field": "patience", "value": 92 }
+      ]
+    },
+    {
+      "teacher_id": "T001",
+      "name": "Sarah Mitchell",
+      "rank": 3,
+      "score": 0.79,
+      "explanation": {
+        "summary": "Sarah Mitchell offers structured Math coaching with strong fundamentals, suitable for the statistics portion of the student's ML goals. Her step-by-step approach can build the mathematical reasoning needed for data science.",
+        "match_reasons": [
+          "Covers Math with structured teaching style, relevant to statistics and ML foundations",
+          "High subject knowledge (92/100) and step-by-step approach for breaking down complex concepts",
+          "8 years of experience with beginner and intermediate students",
+          "Does not cover Programming; limited to the Math/statistics dimension of the student's goals"
+        ],
+        "confidence": "medium"
+      },
+      "citations": [
+        { "source_type": "teacher_profile", "source_id": "teacher:T001", "field": "subjects", "value": ["Math", "Physics"] },
+        { "source_type": "teacher_profile", "source_id": "teacher:T001", "field": "teaching_style", "value": "structured" },
+        { "source_type": "teacher_metric", "source_id": "teacher:T001", "field": "subject_knowledge", "value": 92 }
+      ]
+    },
+    {
+      "teacher_id": "T005",
+      "name": "Olivia Bennett",
+      "rank": 4,
+      "score": 0.76,
+      "explanation": {
+        "summary": "Olivia Bennett provides a supportive, confidence-building environment for learning Math fundamentals. Her structured style and beginner focus make her suitable for a student starting from scratch with statistics.",
+        "match_reasons": [
+          "Covers Math with structured style matching the student's preference",
+          "Strength in building student confidence from scratch — relevant for a beginner entering data science",
+          "High communication (91/100) and patience (93/100) support a new learner",
+          "Lower subject knowledge (84/100) compared to alternatives, and no Programming coverage"
+        ],
+        "confidence": "medium"
+      },
+      "citations": [
+        { "source_type": "teacher_profile", "source_id": "teacher:T005", "field": "subjects", "value": ["English", "Math"] },
+        { "source_type": "teacher_profile", "source_id": "teacher:T005", "field": "bio", "value": "Warm and encouraging — great at building student confidence from scratch." },
+        { "source_type": "teacher_metric", "source_id": "teacher:T005", "field": "communication", "value": 91 },
+        { "source_type": "teacher_metric", "source_id": "teacher:T005", "field": "subject_knowledge", "value": 84 }
+      ]
+    }
+  ]
+}
 ```
 
 ---
 
-## Execution Priorities
+## 5) Student S004 — "Student 3" (Japanese / History, Beginner, Structured) — HITL Handoff
 
-### Critical Path (minimum viable pipeline)
+### Input Profile
 
-The shortest path to a working recommendation for one student:
+```json
+{
+  "id": "S004",
+  "name": "Student 3",
+  "age": 22,
+  "learning_goals": ["Achieve conversational Japanese", "Study East Asian history for university entrance"],
+  "weak_areas": ["Japanese grammar", "Kanji writing", "Modern Asian history"],
+  "current_level": "beginner",
+  "preferred_learning_style": "structured"
+}
+```
+
+### Step 1: Input Normalization
+
+| Raw Input | Canonical Subject |
+|---|---|
+| "Achieve conversational Japanese" | Japanese |
+| "Study East Asian history for university entrance" | History |
+| "Japanese grammar" (weak area) | Japanese |
+| "Kanji writing" (weak area) | Japanese |
+| "Modern Asian history" (weak area) | History |
+
+**Normalized goal subjects:** `{Japanese, History}`
+**Student level:** `beginner` | **Style:** `structured`
+
+### Step 2: Metadata Pre-Filter
+
+Filter: teacher must teach at least one of `{Japanese, History}`.
+
+| Teacher | Subjects | Overlap | Passes Filter |
+|---|---|---|---|
+| T001 Sarah Mitchell | Math, Physics | — | No |
+| T002 James Carter | Programming, Math | — | No |
+| T003 Emily Rhodes | English, Chemistry | — | No |
+| T004 Daniel Foster | Physics, Chemistry | — | No |
+| T005 Olivia Bennett | English, Math | — | No |
+| T006 Ryan Holloway | Programming | — | No |
+| T007 Jessica Harmon | Math, Chemistry | — | No |
+| T008 Marcus Webb | Physics, Programming | — | No |
+| T009 Patricia Lawson | English | — | No |
+| T010 Nathan Cross | Chemistry, Math | — | No |
+
+**Candidates passing filter:** 0
+
+### Step 3-5: Pipeline Short-Circuit
+
+No candidates passed the metadata filter. The pipeline cannot proceed to scoring, reranking, or explanation generation.
+
+- **Deterministic scoring:** skipped (0 candidates)
+- **LLM reranking:** skipped (0 candidates)
+- **Explanation generation:** skipped (0 candidates)
+
+### Step 6: Confidence and Citation Gate
+
+- **Confidence score:** `0.00` (no matching teachers in the pool)
+- **Citation coverage:** `N/A`
+- **Gate result:** FAIL — confidence `0.00 < 0.70` threshold
+- **Status:** `hitl_review`
+- **Trigger reason:** `no_matching_teachers`
+
+### Final Output — S004
+
+```json
+{
+  "request_id": "req_s004_001",
+  "student_id": "S004",
+  "status": "hitl_review",
+  "pipeline_run": {
+    "candidates_filtered": 0,
+    "candidates_scored": 0,
+    "confidence": 0.00,
+    "citation_coverage": null,
+    "duration_ms": 45,
+    "short_circuit_reason": "no_candidates_after_metadata_filter"
+  },
+  "hitl_case": {
+    "case_id": "hitl_s004_001",
+    "trigger_reason": "no_matching_teachers",
+    "details": "Student S004 requires Japanese and History teachers. No teacher in the current pool covers either subject. The platform's teacher inventory does not include Japanese or History specialists.",
+    "recommended_action": "Recruit teachers covering Japanese and/or History, or notify the student that these subjects are not currently available."
+  },
+  "top_1": null,
+  "top_3_alternatives": []
+}
+```
+
+---
+
+## 6) Execution Summary
+
+| Student | Goal Subjects | Candidates | Top Match | Score | Status |
+|---|---|---|---|---|---|
+| S002 "Student 1" | Math, Physics | 7 | T001 Sarah Mitchell | 0.96 | `completed` |
+| S003 "Student 2" | Programming, Math | 7 | T002 James Carter | 0.82 | `completed` |
+| S004 "Student 3" | Japanese, History | 0 | — | — | `hitl_review` |
+
+### Pipeline Trace Summary
 
 ```mermaid
 flowchart LR
-    T000["T-000\nRepo Init"] --> T001["T-001\nDB Schema"]
-    T001 --> T005["T-005\nTaxonomy"]
-    T005 --> T002["T-002\nTeacher\nIngestion"]
-    T005 --> T003["T-003\nStudent\nIngestion"]
-    T002 --> T004["T-004\nProfile\nBatch Worker"]
-    T003 --> T004
-    T004 --> T006["T-006\nHybrid\nRetrieval"]
-    T006 --> T007["T-007\nScoring\nEngine"]
-    T007 --> T008["T-008\nLLM\nReranker"]
-    T008 --> T010["T-010\nExplanation\nGenerator"]
-    T010 --> T013["T-013\nOrchestrator\nAgent"]
-    T013 --> T015["T-015\nAPI\nGateway"]
+    subgraph s002 ["S002 — Math/Physics"]
+        s002_filter["Filter: 7 of 10"]
+        s002_score["Score: T001 = 0.94"]
+        s002_rerank["Rerank: T001 confirmed"]
+        s002_gate["Gate: PASS (0.92)"]
+        s002_out["completed"]
+        s002_filter --> s002_score --> s002_rerank --> s002_gate --> s002_out
+    end
+
+    subgraph s003 ["S003 — Programming/Math"]
+        s003_filter["Filter: 7 of 10"]
+        s003_score["Score: T007 = 0.84"]
+        s003_rerank["Rerank: T002 promoted"]
+        s003_gate["Gate: PASS (0.78)"]
+        s003_out["completed"]
+        s003_filter --> s003_score --> s003_rerank --> s003_gate --> s003_out
+    end
+
+    subgraph s004 ["S004 — Japanese/History"]
+        s004_filter["Filter: 0 of 10"]
+        s004_gate["Gate: FAIL (0.00)"]
+        s004_out["hitl_review"]
+        s004_filter --> s004_gate --> s004_out
+    end
 ```
 
-### Parallelization Opportunities
+### LLM Usage in Pipeline
 
-These ticket groups can be worked on in parallel within each phase:
-
-- **Phase 0:** TICKET-000 first, then TICKET-001 (sequential dependency).
-- **Phase 1:** TICKET-005 first, then TICKET-002 and TICKET-003 in parallel, then TICKET-004.
-- **Phase 2:** TICKET-006 -> TICKET-007 -> TICKET-008 (sequential). TICKET-009 can start once TICKET-006 is done.
-- **Phase 3:** TICKET-012 can start with TICKET-010. TICKET-011 depends on TICKET-010. TICKET-013 is the integrator. TICKET-014 follows TICKET-013.
-- **Phase 4:** TICKET-015, TICKET-016, TICKET-017 have limited parallelism (TICKET-016 and TICKET-017 both depend on TICKET-015).
-
----
-
-## Design Document References
-
-All tickets reference these design documents for detailed specifications:
-
-| Document | Content |
-|---|---|
-| [data-model.md](data-model.md) | Entity definitions, PostgreSQL schema, vector model, versioning rules |
-| [architecture.md](architecture.md) | C4 diagrams, component overview, output contract, HA strategy |
-| [ai-pipeline.md](ai-pipeline.md) | Pipeline flow, upload/embedding flows, multi-agent design, HITL rules |
-| [implementation-plan.md](implementation-plan.md) | Delivery approach, concurrency, API constraints, freshness, evaluation, tech stack |
-| [technical-proposal.md](technical-proposal.md) | Full technical proposal with FR/NFR, sequence charts, technology selection rationale |
-
-## Dataset Files
-
-| File | Content | Used By |
+| Pipeline Step | LLM Utilized | Purpose |
 |---|---|---|
-| [dataset/teachers.json](dataset/teachers.json) | 10 teacher profiles (T001-T010) | TICKET-001 (seed), TICKET-002 (ingestion), TICKET-004 (embedding), TICKET-007 (scoring) |
-| [dataset/new_students.json](dataset/new_students.json) | 3 student profiles (S002-S004) | TICKET-001 (seed), TICKET-003 (ingestion), TICKET-006 (retrieval queries), TICKET-010 (explanations) |
+| Input Normalization | No | Rule-based taxonomy mapping |
+| Metadata Pre-Filter | No | Deterministic SQL/metadata filter |
+| Deterministic Scoring | No | Formula-based composite scoring |
+| LLM Reranking | **Yes** | Holistic relevance judgment to catch nuances the formula misses (e.g. T002 promotion for S003) |
+| Explanation Generation | **Yes** | Natural-language explanation drafting per teacher, grounded in profile data |
+| Citation Validation | **Yes** | Claim extraction and evidence verification via CitationAgent |
+
+### Operational Consistency Notes
+
+The following operational controls are part of the implementation contract and must be reflected in production traces/dashboards:
+
+- **Autoscaling signals:** recommendation workers scale up when queue depth exceeds `50` messages or processing P95 exceeds `5s`; scale down after `5` consecutive minutes of empty queue; worker cap is `10`.
+- **Batch processing targets:** benchmark scenarios use batch size `5-10` and validate queue-drain behavior for `100` and `1,000` students.
+- **Fallback mode:** if LLM provider calls fail or circuit breaker is open, reranking falls back to deterministic ordering and explanations use deterministic templates.
+- **Explanation cache reuse:** for repeated `student_id` + `teacher_id` pairs with unchanged teacher `profile_version`, reuse cached explanations and skip duplicate LLM calls.
+- **Task-based model routing:** cheap model tier for simple low-risk language tasks, balanced tier for standard reranking/explanations, and high-performance tier only for ambiguous high-impact adjudication.
+
+### LLM Token and Cost Tracking (Per Student)
+
+These values are planning-time estimates and should be compared with observed dashboard metrics from `pipeline_trace_steps` token usage.
+
+Assumptions for re-estimation:
+- Balanced model price: `$2.50 / 1M` input tokens, `$10.00 / 1M` output tokens.
+- Cheap model tier for reranking: ~`10x` lower than balanced.
+- High-performance tier is only used on escalation paths (not included in default-path estimate).
+
+| LLM Call | Model Tier | Input Tokens | Output Tokens | Count | Estimated Cost |
+|---|---|---|---|---|---|
+| Reranking | Cheap | ~2,000 | ~500 | 1 | ~$0.0010 |
+| Explanation generation | Balanced | ~800 | ~300 | 4 | ~$0.0200 |
+| Citation validation | Balanced | ~1,500 | ~400 | 1 | ~$0.0078 |
+| **Total (default routed path)** |  | **~6,700** | **~2,100** | **6** | **~$0.0288** |
+
+Estimated cost comparison:
+- Previous single-tier estimate: `~$0.0378` per student.
+- Updated tier-routed estimate: `~$0.0288` per student.
+- Estimated savings: `~24%` per student on the default (non-escalated) path.
