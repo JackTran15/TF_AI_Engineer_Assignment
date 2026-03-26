@@ -15,7 +15,7 @@ This schema supports:
 | Table | Key Columns | Purpose |
 |---|---|---|
 | `teachers` | `teacher_id (PK)`, `profile_version`, `is_active`, `teaching_style CHECK ('structured','exploratory')` | Teacher profile master record |
-| `teacher_skill_scores` | `teacher_id (FK->teachers)`, `scoring_version`, `is_current`, `UNIQUE (teacher_id, scoring_version)`, `INDEX (teacher_id) WHERE is_current=true` | Versioned teacher scoring metrics with score-range checks (`0-100`, satisfaction `0-5`) |
+| `teacher_skill_scores` | `teacher_id (FK->teachers)`, `scoring_version`, `is_current`, `UNIQUE (teacher_id, scoring_version)`, `INDEX (teacher_id) WHERE is_current=true` | Versioned teacher evaluation metrics with score-range checks (`0-100`, satisfaction `0-5`); used as recommendation features, not as authoritative match truth |
 | `students` | `student_id (PK)`, `profile_version`, `status CHECK ('looking_for_new_coach','matched','paused')`, `current_level`, `preferred_learning_style`, `learning_goals_raw`, `weak_areas_raw` | Student profile + status and explicit mapping from `new_students.json` inputs |
 | `profile_notes` | `note_id`, `entity_type`, `entity_id`, `note_source` | Sales notes and correction notes |
 | `subjects` | `subject_id (PK)`, `code (UNIQUE)`, `display_name`, `is_active` | Controlled subject taxonomy (replaces free-text drift) |
@@ -118,3 +118,4 @@ classDiagram
 - `embedding_version` increments when embedding model changes.
 - Recommendation request stores `profile_version` and `embedding_version` snapshot for reproducibility.
 - Workers are idempotent via deterministic `job_id` and dedup checks.
+- Any heuristic weighting derived from `teacher_skill_scores` is provisional and should be recalibrated from production outcomes or HITL reviewer feedback.

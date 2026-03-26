@@ -8,60 +8,58 @@ This architecture is designed for:
 - Multi-agent validation with citations
 - Human-in-the-loop handoff
 
-## 2) C4 Context
+## 2) System Context Diagram
 
 ```mermaid
-C4Context
-    title "AI Coaching Recommendation System Context"
-    Person(studentUser, "Student", "Submits profile and receives recommendations")
-    Person(salesReviewer, "Sales Reviewer", "Reviews low-confidence cases and adds corrections")
-    System(aiPlatform, "Recommendation Platform", "Runs profile ingestion, RAG retrieval, ranking, and explanation")
-    System_Ext(llmProvider, "LLM Provider", "Reranking and explanation generation")
-    Rel(studentUser, aiPlatform, "Submits profile and checks recommendation")
-    Rel(salesReviewer, aiPlatform, "Reviews HITL cases and updates notes")
-    Rel(aiPlatform, llmProvider, "Calls model endpoints")
+flowchart LR
+    studentUser["Student"]
+    salesReviewer["Sales Reviewer"]
+    aiPlatform["Recommendation Platform"]
+    llmProvider["LLM Provider"]
+
+    studentUser -->|"Submits profile and checks recommendation"| aiPlatform
+    salesReviewer -->|"Reviews HITL cases and updates notes"| aiPlatform
+    aiPlatform -->|"Calls model endpoints"| llmProvider
 ```
 
-## 3) C4 Container
+## 3) Container Architecture Diagram
 
 ```mermaid
-C4Container
-    title "Container Architecture"
-    Person(studentUser, "Student", "Request originator")
-    Person(salesReviewer, "Sales Reviewer", "HITL operator")
+flowchart LR
+    studentUser["Student"]
+    salesReviewer["Sales Reviewer"]
+    llmProvider["LLM Provider"]
 
-    System_Boundary(aiBoundary, "Recommendation Platform") {
-        Container(studentPortal, "Student UI", "Web App", "Student form submission, request tracking, and result display")
-        Container(apiGateway, "API Gateway", "Node.js Fastify", "Profile upload and recommendation endpoints")
-        Container(profileBatchWorker, "Profile Batch Worker", "Node.js Worker", "Batches profile chunking and embedding")
-        Container(recommendationBatchWorker, "Recommendation Batch Worker", "Node.js Worker", "Batches students with status looking_for_new_coach")
-        Container(ragOrchestrator, "RAG Orchestrator", "Python FastAPI", "Runs retrieval, ranking, and result composition")
-        Container(agentRuntime, "Agent Runtime", "Python LangGraph", "ToolCallAgent and CitationAgent")
-        Container(hitlConsole, "HITL Console", "Web App", "Sales review workflow")
-        ContainerDb(metaDb, "Metadata DB", "PostgreSQL Multi-AZ", "Profiles, requests, traces, audit")
-        ContainerDb(vectorDb, "Vector Store", "pgvector", "Embeddings and semantic retrieval")
-        ContainerQueue(jobQueue, "Job Queue", "SQS", "Async job buffering")
-        ContainerQueue(dlqQueue, "DLQ", "SQS DLQ", "Failed message isolation")
-    }
+    subgraph aiBoundary["Recommendation Platform"]
+        studentPortal["Student UI (Web App)"]
+        apiGateway["API Gateway (Node.js Fastify)"]
+        profileBatchWorker["Profile Batch Worker (Node.js Worker)"]
+        recommendationBatchWorker["Recommendation Batch Worker (Node.js Worker)"]
+        ragOrchestrator["RAG Orchestrator (Python FastAPI)"]
+        agentRuntime["Agent Runtime (Python LangGraph)"]
+        hitlConsole["HITL Console (Web App)"]
+        metaDb["Metadata DB (PostgreSQL Multi-AZ)"]
+        vectorDb["Vector Store (pgvector)"]
+        jobQueue["Job Queue (SQS)"]
+        dlqQueue["DLQ (SQS DLQ)"]
+    end
 
-    System_Ext(llmProvider, "LLM Provider", "External model API")
-
-    Rel(studentUser, studentPortal, "Submits goals and reviews recommendations")
-    Rel(studentPortal, apiGateway, "POST /recommendations and GET /recommendations/{request_id}")
-    Rel(apiGateway, jobQueue, "Enqueues jobs")
-    Rel(jobQueue, profileBatchWorker, "Profile indexing jobs")
-    Rel(jobQueue, recommendationBatchWorker, "Recommendation trigger jobs")
-    Rel(profileBatchWorker, metaDb, "Writes metadata and versions")
-    Rel(profileBatchWorker, vectorDb, "Upserts embeddings in batch")
-    Rel(recommendationBatchWorker, metaDb, "Reads students with status looking_for_new_coach")
-    Rel(recommendationBatchWorker, ragOrchestrator, "Dispatches batches size 5 to 10")
-    Rel(ragOrchestrator, vectorDb, "Retrieves candidates")
-    Rel(ragOrchestrator, metaDb, "Reads constraints and writes outputs")
-    Rel(ragOrchestrator, agentRuntime, "Runs multi-agent workflow")
-    Rel(agentRuntime, llmProvider, "Calls rerank and generation")
-    Rel(ragOrchestrator, dlqQueue, "Routes unrecoverable failures")
-    Rel(salesReviewer, hitlConsole, "Handles HITL cases")
-    Rel(hitlConsole, ragOrchestrator, "Triggers rerun with human notes")
+    studentUser -->|"Submits goals and reviews recommendations"| studentPortal
+    studentPortal -->|"POST and GET recommendation APIs"| apiGateway
+    apiGateway -->|"Enqueues jobs"| jobQueue
+    jobQueue -->|"Profile indexing jobs"| profileBatchWorker
+    jobQueue -->|"Recommendation trigger jobs"| recommendationBatchWorker
+    profileBatchWorker -->|"Writes metadata and versions"| metaDb
+    profileBatchWorker -->|"Upserts embeddings in batch"| vectorDb
+    recommendationBatchWorker -->|"Reads eligible students"| metaDb
+    recommendationBatchWorker -->|"Dispatches batches size 5 to 10"| ragOrchestrator
+    ragOrchestrator -->|"Retrieves candidates"| vectorDb
+    ragOrchestrator -->|"Reads constraints and writes outputs"| metaDb
+    ragOrchestrator -->|"Runs multi-agent workflow"| agentRuntime
+    agentRuntime -->|"Calls rerank and generation"| llmProvider
+    ragOrchestrator -->|"Routes unrecoverable failures"| dlqQueue
+    salesReviewer -->|"Handles HITL cases"| hitlConsole
+    hitlConsole -->|"Triggers rerun with human notes"| ragOrchestrator
 ```
 
 ## 4) Sequence Charts
@@ -150,7 +148,8 @@ sequenceDiagram
   - Dispatches recommendation jobs in batch size `5-10`
   - Writes outputs with idempotent upsert (`request_id` key) to avoid duplicate result rows
 - **RAG Orchestrator (`Python + FastAPI`)**
-  - Hybrid retrieval, scoring, reranking, and explanation assembly
+  - Hybrid retrieval, provisional heuristic pre-ranking, reranking, and explanation assembly
+  - Final recommendation quality is driven by retrieval evidence, reranking, and citation validation rather than fixed heuristic weights
 - **Agent Runtime (`LangGraph`)**
   - Tool-call-only retrieval agent
   - Citation verification agent
@@ -253,7 +252,7 @@ This path is the simplest deployable flow for the assignment while preserving as
 
 1. Student submits form in `Student UI`.
 2. `API Gateway` validates input, creates `request_id`, stores request row in `Metadata DB`, and enqueues a job.
-3. Single `Recommendation Worker` (can reuse `Recommendation Batch Worker`) reads job, runs retrieval + scoring + one LLM explanation pass.
+3. Single `Recommendation Worker` (can reuse `Recommendation Batch Worker`) reads job, runs retrieval + heuristic shortlist + one LLM rerank/explanation pass.
 4. Worker writes `top_1` + `top_3_alternatives` and explanation/citations to `Metadata DB`.
 5. Student UI polls `GET /recommendations/{request_id}` until `status=completed`, then renders results.
 

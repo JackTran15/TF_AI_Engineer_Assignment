@@ -273,11 +273,11 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    studentUser["Student<br/>Submits goals and weak areas"]
-    salesReviewer["Sales Reviewer<br/>Adds correction notes and approvals"]
-    aiPlatform["AI Recommendation Platform<br/>Performs ingestion retrieval ranking citation and HITL"]
-    llmProvider["LLM Provider<br/>Reranking and explanation generation"]
-    searchProvider["Search Provider<br/>Optional external enrichment"]
+    studentUser["Student - Submits goals and weak areas"]
+    salesReviewer["Sales Reviewer - Adds correction notes and approvals"]
+    aiPlatform["AI Recommendation Platform - Performs ingestion retrieval ranking citation and HITL"]
+    llmProvider["LLM Provider - Reranking and explanation generation"]
+    searchProvider["Search Provider - Optional external enrichment"]
 
     studentUser -->|"Submits profile and receives recommendations"| aiPlatform
     salesReviewer -->|"Reviews low-confidence cases and adds notes"| aiPlatform
@@ -289,24 +289,24 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    studentUser["Student<br/>Request originator"]
-    salesReviewer["Sales Reviewer<br/>Human reviewer"]
+    studentUser["Student - Request originator"]
+    salesReviewer["Sales Reviewer - Human reviewer"]
 
     subgraph aiBoundary["AI Recommendation Platform"]
-        apiGateway["API Gateway<br/>HTTP<br/>Receives profile upload and recommendation requests"]
-        profileBatchWorker["Profile Batch Worker<br/>Node.js Worker<br/>Collects uploaded profiles and runs embedding in batch"]
-        recommendationBatchWorker["Recommendation Batch Worker<br/>Node.js Worker<br/>Collects students with status looking_for_new_coach and runs recommendation flow in batches"]
-        ragOrchestrator["RAG Orchestrator<br/>Service<br/>Runs retrieval ranking and agent workflow"]
-        agentRuntime["Agent Runtime<br/>Service<br/>Executes ToolCallAgent and CitationAgent"]
-        hitlConsole["HITL Console<br/>Web App<br/>Sales review and correction flow"]
-        metaDb[("Metadata DB<br/>PostgreSQL Multi-AZ<br/>Profiles scores traces and audit data")]
-        vectorDb[("Vector Store<br/>pgvector or Vector DB<br/>Chunk embeddings and vector index")]
-        jobQueue[("Job Queue<br/>SQS<br/>Buffers ingestion and recommendation jobs")]
-        dlqQueue[("DLQ<br/>SQS DLQ<br/>Failed jobs for operator triage")]
+        apiGateway["API Gateway - HTTP API for profile upload and recommendation requests"]
+        profileBatchWorker["Profile Batch Worker - Node.js worker for profile collection and batch embedding"]
+        recommendationBatchWorker["Recommendation Batch Worker - Node.js worker for batched recommendation runs"]
+        ragOrchestrator["RAG Orchestrator - Service for retrieval ranking and agent workflow"]
+        agentRuntime["Agent Runtime - Service executing ToolCallAgent and CitationAgent"]
+        hitlConsole["HITL Console - Web app for sales review and correction flow"]
+        metaDb[("Metadata DB - PostgreSQL Multi-AZ for profiles scores traces and audit data")]
+        vectorDb[("Vector Store - pgvector or vector DB for chunk embeddings and retrieval")]
+        jobQueue[("Job Queue - SQS for ingestion and recommendation jobs")]
+        dlqQueue[("DLQ - SQS DLQ for failed jobs and operator triage")]
     end
 
-    llmProvider["LLM Provider<br/>External model API"]
-    searchProvider["Search Provider<br/>External search API"]
+    llmProvider["LLM Provider - External model API"]
+    searchProvider["Search Provider - External search API"]
 
     studentUser -->|"Uploads profile and requests recommendations"| apiGateway
     apiGateway -->|"Enqueues jobs"| jobQueue
@@ -331,18 +331,18 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph ragBoundary["RAG Orchestrator"]
-        queryBuilder["Query Builder<br/>Module<br/>Builds retrieval intent from profile and notes"]
-        hybridRetriever["Hybrid Retriever<br/>Module<br/>Runs metadata and vector retrieval"]
-        scoreEngine["Score Engine<br/>Module<br/>Computes deterministic candidate score"]
-        reranker["LLM Reranker<br/>Module<br/>Applies model-based reranking"]
-        explanationComposer["Explanation Composer<br/>Module<br/>Drafts personalized explanations"]
-        citationValidator["Citation Validator<br/>Module<br/>Verifies claims against evidence"]
-        confidenceGate["Confidence Gate<br/>Module<br/>Triggers HITL if thresholds fail"]
+        queryBuilder["Query Builder - Module building retrieval intent from profile and notes"]
+        hybridRetriever["Hybrid Retriever - Module running metadata and vector retrieval"]
+        scoreEngine["Score Engine - Module computing candidate heuristic signals"]
+        reranker["LLM Reranker - Module applying model-based reranking"]
+        explanationComposer["Explanation Composer - Module drafting personalized explanations"]
+        citationValidator["Citation Validator - Module verifying claims against evidence"]
+        confidenceGate["Confidence Gate - Module triggering HITL if thresholds fail"]
     end
 
-    metaDb[("Metadata DB<br/>PostgreSQL Multi-AZ<br/>Profile and trace storage")]
-    vectorDb[("Vector Store<br/>pgvector or Vector DB<br/>Embedding retrieval")]
-    agentRuntime["Agent Runtime<br/>Service<br/>ToolCallAgent and CitationAgent execution"]
+    metaDb[("Metadata DB - PostgreSQL Multi-AZ for profile and trace storage")]
+    vectorDb[("Vector Store - pgvector or vector DB for embedding retrieval")]
+    agentRuntime["Agent Runtime - Service for ToolCallAgent and CitationAgent execution"]
 
     queryBuilder -->|"Creates retrieval query"| hybridRetriever
     hybridRetriever -->|"Reads semantic neighbors"| vectorDb

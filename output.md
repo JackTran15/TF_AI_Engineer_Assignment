@@ -10,8 +10,8 @@ Pipeline executed against [`dataset/teachers.json`](dataset/teachers.json) (10 t
 flowchart TD
     normalize["Step 1: Input Normalization\nMap raw goals and weak areas to canonical subjects"]
     filter["Step 2: Metadata Pre-Filter\nFilter teachers by subject overlap with student goals"]
-    score["Step 3: Deterministic Scoring\nCompute composite score per candidate"]
-    rerank["Step 4: LLM Reranking\nRerank top candidates with holistic relevance judgment"]
+    score["Step 3: Heuristic Pre-Ranking\nCreate provisional shortlist signals per candidate"]
+    rerank["Step 4: LLM Reranking\nUse retrieved evidence to decide final ordering"]
     explain["Step 5: Explanation Generation\nLLM drafts structured explanation per top-4 teacher"]
     gate["Step 6: Confidence and Citation Gate\nVerify confidence >= 0.7 and citation coverage >= 0.95"]
     completed["Output: status = completed\ntop_1 + top_3_alternatives with explanations"]
@@ -26,12 +26,19 @@ flowchart TD
     gate -->|"Fail"| hitl
 ```
 
-## 2) Scoring Formula Reference
+## 2) Recommendation Heuristic Reference
 
-All deterministic scores use the formula from the scoring engine design:
+The weighted formula below is treated as a provisional recommendation heuristic only. It helps with coarse shortlist ordering and fallback behavior, but it is not the source of truth for final matching quality.
+
+The final recommendation is driven by:
+- retrieved evidence relevance
+- `LLM Reranking`
+- `CitationAgent` validation and confidence gates
+
+Example heuristic used for shortlist generation:
 
 ```
-deterministic_score =
+heuristic_score =
     0.35 * skill_gap_coverage
   + 0.20 * teaching_style_fit
   + 0.15 * experience_suitability
@@ -47,11 +54,7 @@ deterministic_score =
 | `communication_normalized` | 0.15 | `communication_score / 100` |
 | `satisfaction_normalized` | 0.15 | `student_satisfaction / 5.0` |
 
-After deterministic scoring, the LLM reranker produces a blended score:
-
-```
-blended_score = 0.6 * deterministic_score + 0.4 * llm_relevance
-```
+These weights are provisional and should be recalibrated from production outcomes, acceptance signals, and HITL reviewer feedback before being relied on more broadly.
 
 ---
 
@@ -103,7 +106,7 @@ Filter: teacher must teach at least one of `{Math, Physics}`.
 
 **Candidates passing filter:** 7 (T001, T002, T004, T005, T007, T008, T010)
 
-### Step 3: Deterministic Scoring
+### Step 3: Heuristic Pre-Ranking
 
 | Teacher | skill_gap | style_fit | experience | communication | satisfaction | **Score** |
 |---|---|---|---|---|---|---|
@@ -115,7 +118,7 @@ Filter: teacher must teach at least one of `{Math, Physics}`.
 | **T002** James Carter | 0.68 | 0.30 | 0.35 | 0.78 | 0.90 | **0.60** |
 | **T008** Marcus Webb | 0.64 | 0.30 | 0.28 | 0.80 | 0.86 | **0.58** |
 
-**Score breakdown for T001 (top candidate):**
+**Heuristic breakdown for T001 (top provisional candidate):**
 
 ```
 skill_gap_coverage  = (2/2) * 0.6 + (92/100) * 0.4 = 0.60 + 0.37 = 0.97
@@ -124,15 +127,15 @@ experience_suit.    = 1.0 * 0.7 + ((8-3)/9) * 0.3 = 0.70 + 0.17 = 0.87
 communication_norm  = 85 / 100 = 0.85
 satisfaction_norm   = 4.8 / 5.0 = 0.96
 
-deterministic_score = 0.35*0.97 + 0.20*1.00 + 0.15*0.87 + 0.15*0.85 + 0.15*0.96
-                    = 0.340 + 0.200 + 0.131 + 0.128 + 0.144 = 0.94
+heuristic_score = 0.35*0.97 + 0.20*1.00 + 0.15*0.87 + 0.15*0.85 + 0.15*0.96
+                = 0.340 + 0.200 + 0.131 + 0.128 + 0.144 = 0.94
 ```
 
 ### Step 4: LLM Reranking
 
-The LLM reranker evaluates the top-7 scored candidates with holistic context about the student's goals. For S002 (Math + Physics beginner wanting structured fundamentals), the reranker confirms the deterministic ordering because T001 is a clear best fit with full subject coverage.
+The LLM reranker evaluates the shortlisted candidates with retrieved evidence and holistic context about the student's goals. For S002 (Math + Physics beginner wanting structured fundamentals), the reranker confirms the heuristic ordering because T001 is a clear best fit with full subject coverage and strong evidence support.
 
-| Rank | Teacher | Deterministic | LLM Relevance | Blended Score | Reranker Rationale |
+| Rank | Teacher | Heuristic | LLM Relevance | Final Score | Reranker Rationale |
 |---|---|---|---|---|---|
 | 1 | T001 Sarah Mitchell | 0.94 | 0.98 | **0.96** | Full Math + Physics coverage, structured style, beginner-friendly, strong bio alignment |
 | 2 | T007 Jessica Harmon | 0.84 | 0.82 | **0.83** | Solid Math foundation with structured approach, high patience, missing Physics |
@@ -157,7 +160,7 @@ The LLM reranker evaluates the top-7 scored candidates with holistic context abo
   "status": "completed",
   "pipeline_run": {
     "candidates_filtered": 7,
-    "candidates_scored": 7,
+    "candidates_heuristically_ranked": 7,
     "confidence": 0.92,
     "citation_coverage": 0.98,
     "duration_ms": 2340
@@ -306,7 +309,7 @@ Filter: teacher must teach at least one of `{Programming, Math}`.
 
 **Candidates passing filter:** 7 (T001, T002, T005, T006, T007, T008, T010)
 
-### Step 3: Deterministic Scoring
+### Step 3: Heuristic Pre-Ranking
 
 | Teacher | skill_gap | style_fit | experience | communication | satisfaction | **Score** |
 |---|---|---|---|---|---|---|
@@ -318,7 +321,7 @@ Filter: teacher must teach at least one of `{Programming, Math}`.
 | **T006** Ryan Holloway | 0.69 | 0.30 | 0.41 | 0.74 | 0.88 | **0.61** |
 | **T008** Marcus Webb | 0.64 | 0.30 | 0.28 | 0.80 | 0.86 | **0.58** |
 
-**Score breakdown for T002 (highest skill_gap but low total due to style/level mismatch):**
+**Heuristic breakdown for T002 (highest subject coverage but penalized by provisional style/level weights):**
 
 ```
 skill_gap_coverage  = (2/2) * 0.6 + (95/100) * 0.4 = 0.60 + 0.38 = 0.98
@@ -327,15 +330,15 @@ experience_suit.    = 0.4 * 0.7 + ((5-3)/9) * 0.3 = 0.28 + 0.07 = 0.35
 communication_norm  = 78 / 100 = 0.78
 satisfaction_norm   = 4.5 / 5.0 = 0.90
 
-deterministic_score = 0.35*0.98 + 0.20*0.30 + 0.15*0.35 + 0.15*0.78 + 0.15*0.90
-                    = 0.343 + 0.060 + 0.053 + 0.117 + 0.135 = 0.71
+heuristic_score = 0.35*0.98 + 0.20*0.30 + 0.15*0.35 + 0.15*0.78 + 0.15*0.90
+                = 0.343 + 0.060 + 0.053 + 0.117 + 0.135 = 0.71
 ```
 
 ### Step 4: LLM Reranking
 
-The reranker identifies a critical insight the deterministic scorer misses: T002 is the **only teacher covering both Programming and Math**, making him uniquely valuable for a student whose primary goal is Python and data science. The reranker promotes T002 from rank 5 to rank 1.
+The reranker identifies a critical insight the heuristic misses: T002 is the **only teacher covering both Programming and Math**, making him uniquely valuable for a student whose primary goal is Python and data science. The reranker promotes T002 from rank 5 to rank 1.
 
-| Rank | Teacher | Deterministic | LLM Relevance | Blended Score | Reranker Rationale |
+| Rank | Teacher | Heuristic | LLM Relevance | Final Score | Reranker Rationale |
 |---|---|---|---|---|---|
 | 1 | T002 James Carter | 0.71 | 0.99 | **0.82** | Only teacher covering both Programming and Math; project-based learning suits data science goals; style mismatch is secondary to irreplaceable subject coverage |
 | 2 | T007 Jessica Harmon | 0.84 | 0.75 | **0.80** | Solid structured Math for statistics foundation; no programming coverage limits data science scope |
@@ -360,7 +363,7 @@ The reranker identifies a critical insight the deterministic scorer misses: T002
   "status": "completed",
   "pipeline_run": {
     "candidates_filtered": 7,
-    "candidates_scored": 7,
+    "candidates_heuristically_ranked": 7,
     "confidence": 0.78,
     "citation_coverage": 0.96,
     "duration_ms": 2580
@@ -510,9 +513,9 @@ Filter: teacher must teach at least one of `{Japanese, History}`.
 
 ### Step 3-5: Pipeline Short-Circuit
 
-No candidates passed the metadata filter. The pipeline cannot proceed to scoring, reranking, or explanation generation.
+No candidates passed the metadata filter. The pipeline cannot proceed to heuristic pre-ranking, reranking, or explanation generation.
 
-- **Deterministic scoring:** skipped (0 candidates)
+- **Heuristic pre-ranking:** skipped (0 candidates)
 - **LLM reranking:** skipped (0 candidates)
 - **Explanation generation:** skipped (0 candidates)
 
@@ -533,7 +536,7 @@ No candidates passed the metadata filter. The pipeline cannot proceed to scoring
   "status": "hitl_review",
   "pipeline_run": {
     "candidates_filtered": 0,
-    "candidates_scored": 0,
+    "candidates_heuristically_ranked": 0,
     "confidence": 0.00,
     "citation_coverage": null,
     "duration_ms": 45,
@@ -566,7 +569,7 @@ No candidates passed the metadata filter. The pipeline cannot proceed to scoring
 flowchart LR
     subgraph s002 ["S002 — Math/Physics"]
         s002_filter["Filter: 7 of 10"]
-        s002_score["Score: T001 = 0.94"]
+        s002_score["Heuristic: T001 = 0.94"]
         s002_rerank["Rerank: T001 confirmed"]
         s002_gate["Gate: PASS (0.92)"]
         s002_out["completed"]
@@ -575,7 +578,7 @@ flowchart LR
 
     subgraph s003 ["S003 — Programming/Math"]
         s003_filter["Filter: 7 of 10"]
-        s003_score["Score: T007 = 0.84"]
+        s003_score["Heuristic: T007 = 0.84"]
         s003_rerank["Rerank: T002 promoted"]
         s003_gate["Gate: PASS (0.78)"]
         s003_out["completed"]
@@ -596,8 +599,8 @@ flowchart LR
 |---|---|---|
 | Input Normalization | No | Rule-based taxonomy mapping |
 | Metadata Pre-Filter | No | Deterministic SQL/metadata filter |
-| Deterministic Scoring | No | Formula-based composite scoring |
-| LLM Reranking | **Yes** | Holistic relevance judgment to catch nuances the formula misses (e.g. T002 promotion for S003) |
+| Heuristic Pre-Ranking | No | Provisional shortlist and fallback ordering only |
+| LLM Reranking | **Yes** | Holistic relevance judgment over retrieved evidence; primary driver of final ordering |
 | Explanation Generation | **Yes** | Natural-language explanation drafting per teacher, grounded in profile data |
 | Citation Validation | **Yes** | Claim extraction and evidence verification via CitationAgent |
 
@@ -607,7 +610,7 @@ The following operational controls are part of the implementation contract and m
 
 - **Autoscaling signals:** recommendation workers scale up when queue depth exceeds `50` messages or processing P95 exceeds `5s`; scale down after `5` consecutive minutes of empty queue; worker cap is `10`.
 - **Batch processing targets:** benchmark scenarios use batch size `5-10` and validate queue-drain behavior for `100` and `1,000` students.
-- **Fallback mode:** if LLM provider calls fail or circuit breaker is open, reranking falls back to deterministic ordering and explanations use deterministic templates.
+- **Fallback mode:** if LLM provider calls fail or circuit breaker is open, reranking falls back to heuristic ordering and explanations use constrained templates.
 - **Explanation cache reuse:** for repeated `student_id` + `teacher_id` pairs with unchanged teacher `profile_version`, reuse cached explanations and skip duplicate LLM calls.
 - **Task-based model routing:** cheap model tier for simple low-risk language tasks, balanced tier for standard reranking/explanations, and high-performance tier only for ambiguous high-impact adjudication.
 

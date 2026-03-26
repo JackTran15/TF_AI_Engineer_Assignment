@@ -15,6 +15,8 @@ When **new students register** (see `new_students.json`), they provide their lea
 
 The pipeline should **utilize LLM** where it adds value.
 
+Any non-LLM weighted ranking logic should be treated as a lightweight heuristic or fallback aid, not the source of truth for matching quality.
+
 **Phase 2 — Expose the pipeline to the world**
 
 Once the pipeline is in place, the next step is making it accessible:
@@ -49,7 +51,7 @@ Once the pipeline is in place, the next step is making it accessible:
 
 Run the pipeline against `new_student.json` and `teachers.json` and produce:
 
-- **Pipeline trace** — an ASCII diagram + each step taken (filtering, scoring, LLM calls) with inputs and outputs shown
+- **Pipeline trace** — an ASCII diagram + each step taken (filtering, heuristic ranking, LLM calls) with inputs and outputs shown
 - **Final selection** — best match + 3 alternatives, clearly ranked
 - **Explanations** — one LLM-generated explanation per selected teacher, tied to specific student and teacher data
 

@@ -33,7 +33,7 @@ Per-recommendation latency breakdown (P50):
 | Step | Latency | LLM Calls |
 |---|---|---|
 | Metadata filter + vector retrieval | ~50 ms | 0 |
-| Deterministic scoring (10 candidates) | ~15 ms | 0 |
+| Heuristic pre-ranking (10 candidates) | ~15 ms | 0 |
 | LLM reranking (top-7 candidates) | ~800 ms | 1 |
 | Explanation generation (4 teachers) | ~1,200 ms | 4 (parallel) |
 | Citation validation | ~300 ms | 1 |
@@ -63,7 +63,7 @@ Scaling triggers:
 - Per-provider rate limiter and token budget guard.
 - Circuit breaker and timeout policy around LLM and web search calls.
 - Fallback mode:
-  - deterministic ranking remains available
+  - heuristic ordering remains available
   - explanation uses constrained template when LLM is unavailable
 - Optional secondary model provider for high availability.
 - Task-based model routing:
@@ -90,7 +90,7 @@ Cost projections (at $2.50 / 1M input tokens, $10.00 / 1M output tokens):
 | 1,000 students | $16.75 | $21.00 | **$37.75** | $0.038 |
 
 Cost reduction levers:
-- **Template fallback:** When the LLM circuit breaker opens, skip reranking and explanation LLM calls. Use deterministic ranking + templated explanations. Reduces cost to ~$0 per student (no LLM calls).
+- **Template fallback:** When the LLM circuit breaker opens, skip reranking and explanation LLM calls. Use heuristic ordering + templated explanations. Reduces cost to ~$0 per student (no LLM calls).
 - **Smaller model for reranking:** Use a cheaper model (GPT-4o-mini at ~10x lower cost) for the reranking step, saving ~40% on total LLM cost.
 - **Cached explanations:** If a student-teacher pair has been recommended before and teacher profile has not changed (`profile_version` unchanged), reuse the cached explanation.
 - **Tiered escalation:** Invoke high-performance model tier only when uncertainty gates fail; default path remains cheap/balanced tiers.
@@ -128,9 +128,9 @@ Cost reduction levers:
 ### Ground-Truth Methodology
 
 **Phase 1 — Bootstrapping (no labeled data):**
-- Use the deterministic scoring engine as a weak baseline. Rank all teachers for a set of synthetic student profiles and treat the top-4 as pseudo-labels.
+- Use retrieval plus a lightweight heuristic only to generate an initial candidate shortlist; do not treat heuristic ranking as ground truth.
 - Have internal subject-matter experts (sales team, education leads) manually label 50-100 student-teacher pairs as `good_match`, `acceptable`, or `poor_match`.
-- Compute `precision_at_4` and `ndcg_at_4` against expert labels to establish a baseline.
+- Compute `precision_at_4` and `ndcg_at_4` against expert labels to establish a baseline, then recalibrate heuristic weights from those labels if the heuristic is kept.
 
 **Phase 2 — Online feedback collection:**
 - Track implicit signals: recommendation acceptance rate (student clicks "Accept"), rematch request rate (student requests a different teacher within 7 days), and session completion rate.
@@ -138,7 +138,7 @@ Cost reduction levers:
 - Label a recommendation as `positive` if the student does not request a rematch within 14 days and rates the teacher >= 4/5.
 
 **Phase 3 — A/B testing framework:**
-- Split incoming students into control (deterministic-only ranking) and treatment (deterministic + LLM reranking) groups.
+- Split incoming students into control (retrieval + heuristic-only fallback ordering) and treatment (retrieval + LLM reranking + citation-gated output) groups.
 - Primary metric: recommendation acceptance rate lift.
 - Secondary metrics: rematch rate reduction, HITL trigger rate reduction, time-to-first-valid-recommendation improvement.
 - Minimum sample size: 200 students per arm for statistical significance at 95% confidence.
@@ -164,7 +164,7 @@ Cost reduction levers:
 
 ### Phase 2
 - Implement recommendation trigger worker and RAG retrieval/ranking.
-- Return top-4 teachers with deterministic score.
+- Return top-4 teachers using retrieval-first ranking, with the heuristic kept only for shortlist/fallback support.
 
 ### Phase 3
 - Add explanation generation and citation validation agents.
