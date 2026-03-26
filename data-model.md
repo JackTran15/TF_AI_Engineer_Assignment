@@ -68,26 +68,26 @@ This schema supports:
 
 ```mermaid
 classDiagram
-    class "teachers" as teachers
-    class "subjects" as subjects
-    class "skills" as skills
-    class "skill_aliases" as skill_aliases
-    class "teacher_subjects" as teacher_subjects
-    class "teacher_skill_scores" as teacher_skill_scores
-    class "students" as students
-    class "student_goal_subjects" as student_goal_subjects
-    class "student_weak_skills" as student_weak_skills
-    class "profile_notes" as profile_notes
-    class "profile_chunks" as profile_chunks
-    class "embedding_jobs" as embedding_jobs
-    class "recommendation_requests" as recommendation_requests
-    class "recommendation_results" as recommendation_results
-    class "recommendation_explanations" as recommendation_explanations
-    class "recommendation_citations" as recommendation_citations
-    class "pipeline_trace_steps" as pipeline_trace_steps
-    class "hitl_cases" as hitl_cases
-    class "hitl_edits" as hitl_edits
-    class "batch_run_logs" as batch_run_logs
+    class teachers["teachers"]
+    class subjects["subjects"]
+    class skills["skills"]
+    class skill_aliases["skill_aliases"]
+    class teacher_subjects["teacher_subjects"]
+    class teacher_skill_scores["teacher_skill_scores"]
+    class students["students"]
+    class student_goal_subjects["student_goal_subjects"]
+    class student_weak_skills["student_weak_skills"]
+    class profile_notes["profile_notes"]
+    class profile_chunks["profile_chunks"]
+    class embedding_jobs["embedding_jobs"]
+    class recommendation_requests["recommendation_requests"]
+    class recommendation_results["recommendation_results"]
+    class recommendation_explanations["recommendation_explanations"]
+    class recommendation_citations["recommendation_citations"]
+    class pipeline_trace_steps["pipeline_trace_steps"]
+    class hitl_cases["hitl_cases"]
+    class hitl_edits["hitl_edits"]
+    class batch_run_logs["batch_run_logs"]
 
     teachers --> teacher_subjects : "teaches subjects"
     subjects --> teacher_subjects : "subject mapping"
