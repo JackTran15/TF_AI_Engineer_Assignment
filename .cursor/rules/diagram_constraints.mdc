@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+always using mermaid uml for diagrams and ensure to wrap double quotes for elements labels and texts

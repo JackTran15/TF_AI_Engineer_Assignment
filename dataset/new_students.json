@@ -1,0 +1,40 @@
+[
+  {
+    "id": "S002",
+    "name": "Student 1",
+    "age": 15,
+    "learning_goals": [
+      "Understand core Math concepts",
+      "Build confidence in Physics"
+    ],
+    "weak_areas": ["Algebra", "Geometry", "Newton's Laws"],
+    "current_level": "beginner",
+    "preferred_learning_style": "structured"
+  },
+
+  {
+    "id": "S003",
+    "name": "Student 2",
+    "age": 19,
+    "learning_goals": [
+      "Learn Python and data science",
+      "Understand statistics for ML"
+    ],
+    "weak_areas": ["Python basics", "Statistics", "Data structures"],
+    "current_level": "beginner",
+    "preferred_learning_style": "structured"
+  },
+
+  {
+    "id": "S004",
+    "name": "Student 3",
+    "age": 22,
+    "learning_goals": [
+      "Achieve conversational Japanese",
+      "Study East Asian history for university entrance"
+    ],
+    "weak_areas": ["Japanese grammar", "Kanji writing", "Modern Asian history"],
+    "current_level": "beginner",
+    "preferred_learning_style": "structured"
+  }
+]

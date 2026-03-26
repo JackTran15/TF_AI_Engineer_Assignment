@@ -1,0 +1,162 @@
+[
+  {
+    "id": "T001",
+    "name": "Sarah Mitchell",
+    "subjects": ["Math", "Physics"],
+    "teaching_style": "structured",
+    "experience_years": 8,
+    "preferred_student_level": ["beginner", "intermediate"],
+    "scores": {
+      "subject_knowledge": 92,
+      "communication": 85,
+      "problem_solving": 88,
+      "patience": 90,
+      "student_satisfaction": 4.8
+    },
+    "bio": "Specialises in breaking down complex Math and Physics concepts step by step."
+  },
+  {
+    "id": "T002",
+    "name": "James Carter",
+    "subjects": ["Programming", "Math"],
+    "teaching_style": "exploratory",
+    "experience_years": 5,
+    "preferred_student_level": ["intermediate", "advanced"],
+    "scores": {
+      "subject_knowledge": 95,
+      "communication": 78,
+      "problem_solving": 96,
+      "patience": 72,
+      "student_satisfaction": 4.5
+    },
+    "bio": "Loves challenging students with real-world problems and project-based learning."
+  },
+  {
+    "id": "T003",
+    "name": "Emily Rhodes",
+    "subjects": ["English", "Chemistry"],
+    "teaching_style": "structured",
+    "experience_years": 10,
+    "preferred_student_level": ["beginner"],
+    "scores": {
+      "subject_knowledge": 89,
+      "communication": 95,
+      "problem_solving": 80,
+      "patience": 97,
+      "student_satisfaction": 4.9
+    },
+    "bio": "Patient and nurturing teacher, excellent for students new to a subject."
+  },
+  {
+    "id": "T004",
+    "name": "Daniel Foster",
+    "subjects": ["Physics", "Chemistry"],
+    "teaching_style": "exploratory",
+    "experience_years": 6,
+    "preferred_student_level": ["intermediate", "advanced"],
+    "scores": {
+      "subject_knowledge": 91,
+      "communication": 82,
+      "problem_solving": 93,
+      "patience": 75,
+      "student_satisfaction": 4.6
+    },
+    "bio": "Focuses on experimental thinking and building intuition for science subjects."
+  },
+  {
+    "id": "T005",
+    "name": "Olivia Bennett",
+    "subjects": ["English", "Math"],
+    "teaching_style": "structured",
+    "experience_years": 4,
+    "preferred_student_level": ["beginner", "intermediate"],
+    "scores": {
+      "subject_knowledge": 84,
+      "communication": 91,
+      "problem_solving": 79,
+      "patience": 93,
+      "student_satisfaction": 4.7
+    },
+    "bio": "Warm and encouraging — great at building student confidence from scratch."
+  },
+  {
+    "id": "T006",
+    "name": "Ryan Holloway",
+    "subjects": ["Programming"],
+    "teaching_style": "exploratory",
+    "experience_years": 7,
+    "preferred_student_level": ["advanced"],
+    "scores": {
+      "subject_knowledge": 97,
+      "communication": 74,
+      "problem_solving": 98,
+      "patience": 68,
+      "student_satisfaction": 4.4
+    },
+    "bio": "Expert-level programmer who pushes advanced students toward mastery."
+  },
+  {
+    "id": "T007",
+    "name": "Jessica Harmon",
+    "subjects": ["Math", "Chemistry"],
+    "teaching_style": "structured",
+    "experience_years": 9,
+    "preferred_student_level": ["beginner", "intermediate"],
+    "scores": {
+      "subject_knowledge": 88,
+      "communication": 89,
+      "problem_solving": 85,
+      "patience": 92,
+      "student_satisfaction": 4.8
+    },
+    "bio": "Clear and methodical — helps students build a strong foundation before moving on."
+  },
+  {
+    "id": "T008",
+    "name": "Marcus Webb",
+    "subjects": ["Physics", "Programming"],
+    "teaching_style": "exploratory",
+    "experience_years": 3,
+    "preferred_student_level": ["intermediate"],
+    "scores": {
+      "subject_knowledge": 86,
+      "communication": 80,
+      "problem_solving": 90,
+      "patience": 78,
+      "student_satisfaction": 4.3
+    },
+    "bio": "Energetic and creative — connects Physics and Programming through hands-on projects."
+  },
+  {
+    "id": "T009",
+    "name": "Patricia Lawson",
+    "subjects": ["English"],
+    "teaching_style": "structured",
+    "experience_years": 12,
+    "preferred_student_level": ["beginner", "intermediate", "advanced"],
+    "scores": {
+      "subject_knowledge": 93,
+      "communication": 97,
+      "problem_solving": 78,
+      "patience": 95,
+      "student_satisfaction": 4.9
+    },
+    "bio": "Veteran English teacher with a track record across all levels and ages."
+  },
+  {
+    "id": "T010",
+    "name": "Nathan Cross",
+    "subjects": ["Chemistry", "Math"],
+    "teaching_style": "structured",
+    "experience_years": 5,
+    "preferred_student_level": ["intermediate", "advanced"],
+    "scores": {
+      "subject_knowledge": 90,
+      "communication": 83,
+      "problem_solving": 87,
+      "patience": 80,
+      "student_satisfaction": 4.6
+    },
+    "bio": "Detail-oriented teacher who helps students master formulas and analytical thinking."
+  }
+]
