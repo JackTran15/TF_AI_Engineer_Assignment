@@ -1,6 +1,6 @@
 [
   {
-    "id": "S002",
+    "id": "S001",
     "name": "Student 1",
     "age": 15,
     "learning_goals": [
@@ -13,7 +13,7 @@
   },
 
   {
-    "id": "S003",
+    "id": "S002",
     "name": "Student 2",
     "age": 19,
     "learning_goals": [
@@ -26,7 +26,7 @@
   },
 
   {
-    "id": "S004",
+    "id": "S003",
     "name": "Student 3",
     "age": 22,
     "learning_goals": [

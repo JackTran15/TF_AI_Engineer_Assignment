@@ -118,20 +118,20 @@ def link_evidence(claim: Claim, evidence: list[EvidenceChunk]) -> list[Citation]
 - **Stale version rejection:** Citation referencing `profile_version=1` when current is `profile_version=2`; verify rejection.
 
 ### Integration Tests
-- **Full citation validation for S002:** Pass S002's 4 explanation drafts and evidence chunks; verify each explanation receives a `citation_set`. Verify coverage >= 0.95 for well-matched teachers (T001). Verify each citation links to an actual `profile_chunks` row.
+- **Full citation validation for S001:** Pass S001's 4 explanation drafts and evidence chunks; verify each explanation receives a `citation_set`. Verify coverage >= 0.95 for well-matched teachers (T001). Verify each citation links to an actual `profile_chunks` row.
 - **Unsupported claim removal:** Inject a hallucinated claim ("T001 has 20 years experience" when actual is 8); verify it receives `unsupported` verdict and is removed from the final explanation.
 - **Rewrite loop:** Set coverage threshold to 0.99; pass an explanation with 1 weakly supported claim; verify the agent requests a rewrite and re-validates.
 - **Persistence:** After validation, query `recommendation_citations` for the request; verify citation rows exist with correct `source_id`, `chunk_id`, and `evidence_span`.
 - **Ambiguous claim escalation:** Provide claims with conflicting evidence spans and borderline overlap scores; verify high-performance model tier is used only for those unresolved claims, with escalation reason logged.
 
 ### E2E / Manual Tests
-- **Full pipeline citation check for S002:** Run the complete pipeline (retrieval -> scoring -> reranking -> explanation -> citation); verify every claim in the final output has at least one citation. Verify no `unsupported` claims remain.
-- **Citation accuracy manual review:** For S002's top-1 teacher, read each citation's `evidence_span`; verify it genuinely supports the linked claim (not a false positive).
+- **Full pipeline citation check for S001:** Run the complete pipeline (retrieval -> scoring -> reranking -> explanation -> citation); verify every claim in the final output has at least one citation. Verify no `unsupported` claims remain.
+- **Citation accuracy manual review:** For S001's top-1 teacher, read each citation's `evidence_span`; verify it genuinely supports the linked claim (not a false positive).
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
 |---|---|---|
-| AC: Returns citation_set per explanation | Integration | Full citation validation for S002 |
+| AC: Returns citation_set per explanation | Integration | Full citation validation for S001 |
 | AC: Claim extraction splits atomic claims | Unit | Claim extraction tests |
 | AC: Evidence linking maps to source | Unit | Evidence linking tests |
 | AC: Verdicts: supported/partially/unsupported | Unit | Verdict assignment tests |
@@ -146,4 +146,4 @@ def link_evidence(claim: Claim, evidence: list[EvidenceChunk]) -> list[Citation]
 ## Dataset References
 
 - Evidence chunks are derived from `dataset/teachers.json` profiles (via TICKET-004 embedding). T001's chunk containing "subject_knowledge: 92" is the expected evidence for claims about Math scores.
-- Student data from `dataset/new_students.json` drives the claims. S002's weak areas (Algebra, Geometry, Newton's Laws) should be cited against teacher profiles.
+- Student data from `dataset/new_students.json` drives the claims. S001's weak areas (Algebra, Geometry, Newton's Laws) should be cited against teacher profiles.

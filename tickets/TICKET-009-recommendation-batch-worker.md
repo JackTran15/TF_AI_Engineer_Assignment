@@ -134,7 +134,7 @@ const retryPolicy = {
 - **Batch partitioning — large set:** Pass 12 eligible students with max batch size 10; verify 2 batches are created (e.g., 10+2 or 7+5 depending on strategy).
 - **Batch partitioning — empty set:** Pass 0 eligible students; verify no batches are created and no jobs enqueued.
 - **Scan query correctness:** Verify the scan query filters `status = 'looking_for_new_coach'` AND excludes students with existing `queued` or `processing` requests.
-- **Idempotency — duplicate prevention:** Mark S002 as having a `queued` request; run scan; verify S002 is excluded from the batch.
+- **Idempotency — duplicate prevention:** Mark S001 as having a `queued` request; run scan; verify S001 is excluded from the batch.
 - **Schedule timing:** Verify worker runs on configurable schedule (mock timer fires every 30s by default).
 
 ### Integration Tests
@@ -172,6 +172,6 @@ const retryPolicy = {
 
 ## Dataset References
 
-- The worker scans for students from `dataset/new_students.json` (S002, S003, S004), all initially seeded with `status = 'looking_for_new_coach'`.
+- The worker scans for students from `dataset/new_students.json` (S001, S002, S003), all initially seeded with `status = 'looking_for_new_coach'`.
 - With 3 students, a single batch (size 3-5) will be created.
 - At scale (100-1000 students per the implementation plan), the worker creates 10-200 batches per scan cycle.

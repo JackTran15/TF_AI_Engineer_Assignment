@@ -126,7 +126,7 @@ async def rerank_with_fallback(student, candidates, config):
 ## Test Plan
 
 ### Unit Tests
-- **Prompt construction:** Build the reranker prompt for S002 with 5 candidates; verify prompt includes student goals, weak areas, level, style, and all candidate fields (name, subjects, style, bio, scores).
+- **Prompt construction:** Build the reranker prompt for S001 with 5 candidates; verify prompt includes student goals, weak areas, level, style, and all candidate fields (name, subjects, style, bio, scores).
 - **LLM response parsing:** Mock LLM returning a valid JSON array of reranked teachers; verify the parser extracts `teacher_id`, `rank`, `rerank_score`, and `rationale` for each entry.
 - **LLM response — malformed JSON:** Mock LLM returning invalid JSON; verify fallback to deterministic ranking is triggered.
 - **Blended score calculation:** Given `deterministic_score=0.90`, `llm_rerank_score=0.80`, `alpha=0.6`; verify `final_score = 0.6*0.90 + 0.4*0.80 = 0.86`.
@@ -136,14 +136,14 @@ async def rerank_with_fallback(student, candidates, config):
 - **Model-tier configuration:** Set reranker model to `gpt-4o-mini`; verify request uses configured model and trace stores that model value.
 
 ### Integration Tests
-- **Live/mocked reranking:** Send 10 candidates for S002 to the LLM reranker (with real or mocked LLM); verify a top-4 list is returned with blended scores and rationales.
+- **Live/mocked reranking:** Send 10 candidates for S001 to the LLM reranker (with real or mocked LLM); verify a top-4 list is returned with blended scores and rationales.
 - **Trace output:** After reranking, query `pipeline_trace_steps` for `step_name='llm_reranking'`; verify the row includes prompt, model used, latency_ms, token usage, and the ranked output.
 - **Circuit breaker:** Simulate 3 consecutive LLM failures within 60 seconds; verify circuit opens and subsequent requests use deterministic fallback without attempting LLM call. Wait 30 seconds; verify half-open state allows one probe.
 - **Partial LLM failure:** If LLM returns only 3 teachers instead of 4, verify the 4th is filled from the deterministic ranking.
 
 ### E2E / Manual Tests
-- **Full retrieval + scoring + reranking for S002:** Run the complete pipeline from retrieval through reranking; verify 4 teachers are returned with final blended scores. Verify the top-1 teacher is reasonable for S002's profile (Math/Physics, beginner, structured).
-- **Graceful degradation test:** Stop or block the LLM endpoint; submit a recommendation for S002; verify the system still returns 4 teachers using deterministic-only ranking within acceptable latency.
+- **Full retrieval + scoring + reranking for S001:** Run the complete pipeline from retrieval through reranking; verify 4 teachers are returned with final blended scores. Verify the top-1 teacher is reasonable for S001's profile (Math/Physics, beginner, structured).
+- **Graceful degradation test:** Stop or block the LLM endpoint; submit a recommendation for S001; verify the system still returns 4 teachers using deterministic-only ranking within acceptable latency.
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
@@ -163,4 +163,4 @@ async def rerank_with_fallback(student, candidates, config):
 ## Dataset References
 
 - The reranker processes candidates scored against `dataset/teachers.json` profiles for the students in `dataset/new_students.json`.
-- Example: For S002, the deterministic engine might rank T001 > T007 > T005 > T001 > T010. The LLM reranker can adjust if, for example, T007's bio indicates a methodology that better addresses Algebra weakness specifically.
+- Example: For S001, the deterministic engine might rank T001 > T007 > T005 > T001 > T010. The LLM reranker can adjust if, for example, T007's bio indicates a methodology that better addresses Algebra weakness specifically.

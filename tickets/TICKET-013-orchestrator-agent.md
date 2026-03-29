@@ -110,7 +110,7 @@ def should_trigger_hitl(confidence_score, citation_coverage, config):
 ## Test Plan
 
 ### Unit Tests
-- **Execution plan builder:** Pass S002 with default config; verify plan includes all 5 agents in correct sequence. Pass S002 with `skip_reranker=true` config; verify reranker is omitted.
+- **Execution plan builder:** Pass S001 with default config; verify plan includes all 5 agents in correct sequence. Pass S001 with `skip_reranker=true` config; verify reranker is omitted.
 - **Confidence gate — pass:** Set `confidence_score=0.85` and threshold 0.7; verify gate passes.
 - **Confidence gate — fail:** Set `confidence_score=0.5` and threshold 0.7; verify gate fails and HITL trigger fires with reason `low_confidence`.
 - **Citation gate — pass:** Set `citation_coverage=0.98` and threshold 0.95; verify gate passes.
@@ -121,27 +121,27 @@ def should_trigger_hitl(confidence_score, citation_coverage, config):
 - **Escalation reason logging:** Trigger escalation path; verify trace stores escalation reason and selected model tier.
 
 ### Integration Tests
-- **Full orchestration for S002:** Run `orchestrate_recommendation(S002)` end-to-end; verify the output has 4 teachers with explanations and citations. Verify `recommendation_requests.status = 'completed'`.
-- **HITL trigger for S004 (no matching teachers):** Run orchestration for S004 (Japanese/History); verify low confidence triggers HITL. Verify `recommendation_requests.status = 'hitl_review'`. Verify a `hitl_cases` row is created with `trigger_reason`.
-- **Trace completeness:** After orchestration for S002, query `pipeline_trace_steps` for the `request_id`; verify entries exist for each stage (tool_call, scoring, reranking, explanation, citation, orchestration).
+- **Full orchestration for S001:** Run `orchestrate_recommendation(S001)` end-to-end; verify the output has 4 teachers with explanations and citations. Verify `recommendation_requests.status = 'completed'`.
+- **HITL trigger for S003 (no matching teachers):** Run orchestration for S003 (Japanese/History); verify low confidence triggers HITL. Verify `recommendation_requests.status = 'hitl_review'`. Verify a `hitl_cases` row is created with `trigger_reason`.
+- **Trace completeness:** After orchestration for S001, query `pipeline_trace_steps` for the `request_id`; verify entries exist for each stage (tool_call, scoring, reranking, explanation, citation, orchestration).
 - **Output contract validation:** Parse the final output JSON; validate against the architecture.md contract schema (top_1 has teacher_id, rank, score, explanation, citations).
 
 ### E2E / Manual Tests
-- **Full pipeline for all 3 students:** Run orchestration for S002, S003, S004. Verify:
-  - S002: `status=completed` with 4 teachers.
-  - S003: `status=completed` with 4 teachers (Programming/Math match).
-  - S004: `status=hitl_review` (no matching teachers -> low confidence).
-- **HITL rerun:** After S004 triggers HITL, add correction notes, trigger rerun; verify both pre-HITL and post-HITL traces are stored.
+- **Full pipeline for all 3 students:** Run orchestration for S001, S002, S003. Verify:
+  - S001: `status=completed` with 4 teachers.
+  - S002: `status=completed` with 4 teachers (Programming/Math match).
+  - S003: `status=hitl_review` (no matching teachers -> low confidence).
+- **HITL rerun:** After S003 triggers HITL, add correction notes, trigger rerun; verify both pre-HITL and post-HITL traces are stored.
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
 |---|---|---|
-| AC: Produces complete result or HITL handoff | Integration | Full orchestration S002 + S004 |
+| AC: Produces complete result or HITL handoff | Integration | Full orchestration S001 + S003 |
 | AC: Execution plan from student constraints | Unit | Execution plan builder |
 | AC: Correct agent sequence | Integration | Trace completeness check |
-| AC: Confidence gate blocks low confidence | Unit + Integration | Confidence gate tests + S004 HITL |
+| AC: Confidence gate blocks low confidence | Unit + Integration | Confidence gate tests + S003 HITL |
 | AC: Citation gate blocks low coverage | Unit | Citation gate tests |
-| AC: HITL trigger with reason code | Integration | HITL trigger for S004 |
+| AC: HITL trigger with reason code | Integration | HITL trigger for S003 |
 | AC: Output matches contract shape | Unit + Integration | Output assembly + contract validation |
 | AC: Pre-HITL and post-HITL traces stored | E2E | HITL rerun test |
 | AC: Orchestration trace entry written | Integration | Trace completeness |
@@ -152,5 +152,5 @@ def should_trigger_hitl(confidence_score, citation_coverage, config):
 ## Dataset References
 
 - The orchestrator processes students from `dataset/new_students.json` against teachers from `dataset/teachers.json`.
-- S002 (Math/Physics, beginner, structured) is the primary happy-path test case expected to produce `status=completed`.
-- S004 (Japanese/History, beginner, structured) is the primary edge case expected to trigger HITL due to no matching teachers.
+- S001 (Math/Physics, beginner, structured) is the primary happy-path test case expected to produce `status=completed`.
+- S003 (Japanese/History, beginner, structured) is the primary edge case expected to trigger HITL due to no matching teachers.

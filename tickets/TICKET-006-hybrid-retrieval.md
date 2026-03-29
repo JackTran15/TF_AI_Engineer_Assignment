@@ -113,35 +113,35 @@ If strict filters return fewer than 4 candidates:
 ## Test Plan
 
 ### Unit Tests
-- **Query intent builder:** Pass S002 profile (Math/Physics goals, beginner, structured); verify `subject_codes` contains `['math', 'physics']` and `query_text` includes learning goals and weak areas.
+- **Query intent builder:** Pass S001 profile (Math/Physics goals, beginner, structured); verify `subject_codes` contains `['math', 'physics']` and `query_text` includes learning goals and weak areas.
 - **Metadata filter SQL:** Verify filter builder generates correct SQL/parameters for `subject=math, level=beginner, is_active=true`. Verify it excludes inactive teachers.
 - **Vector search mock:** Mock pgvector query; verify results are sorted by cosine similarity descending. Verify `top_k` limit is respected.
 - **Merge/dedup logic:** Provide 6 chunks from 3 teachers (2 chunks each); verify dedup produces 3 candidates. Verify `max_similarity` and `mean_similarity` are computed correctly per teacher.
 - **Progressive filter relaxation:** When strict filters return 2 candidates (below threshold of 4), verify relaxation drops `preferred_student_level` first, then widens subject match.
 
 ### Integration Tests
-- **S002 retrieval (Math/Physics beginner):** With all 10 teachers indexed, run `retrieve_candidates(S002)`; verify candidate set includes T001 (Math+Physics, structured, beginner-friendly) and excludes T006 (Programming only, advanced only). Verify T009 (English only) is excluded by subject filter.
-- **S004 retrieval (Japanese/History):** Run `retrieve_candidates(S004)`; verify metadata filter returns zero direct matches, progressive relaxation kicks in, and result set contains teachers ranked by general semantic similarity.
-- **Evidence chunks attached:** For S002 retrieval, verify each candidate has at least one `evidence_chunk` from the vector search results.
-- **Retrieval latency:** Measure retrieval time for S002 against the 10-teacher corpus; verify under 500ms with pgvector HNSW index.
+- **S001 retrieval (Math/Physics beginner):** With all 10 teachers indexed, run `retrieve_candidates(S001)`; verify candidate set includes T001 (Math+Physics, structured, beginner-friendly) and excludes T006 (Programming only, advanced only). Verify T009 (English only) is excluded by subject filter.
+- **S003 retrieval (Japanese/History):** Run `retrieve_candidates(S003)`; verify metadata filter returns zero direct matches, progressive relaxation kicks in, and result set contains teachers ranked by general semantic similarity.
+- **Evidence chunks attached:** For S001 retrieval, verify each candidate has at least one `evidence_chunk` from the vector search results.
+- **Retrieval latency:** Measure retrieval time for S001 against the 10-teacher corpus; verify under 500ms with pgvector HNSW index.
 
 ### E2E / Manual Tests
-- **All 3 students retrieval:** Run the full retrieval pipeline for S002, S003, and S004. Verify:
-  - S002 returns candidates covering Math and Physics teachers.
-  - S003 returns candidates covering Programming and Math teachers.
-  - S004 returns a relaxed candidate set with low confidence scores.
-- **Inspect evidence quality:** For S002's top candidate, read the attached `evidence_chunks`; verify they contain relevant teacher profile text (subjects, bio, scores).
+- **All 3 students retrieval:** Run the full retrieval pipeline for S001, S002, and S003. Verify:
+  - S001 returns candidates covering Math and Physics teachers.
+  - S002 returns candidates covering Programming and Math teachers.
+  - S003 returns a relaxed candidate set with low confidence scores.
+- **Inspect evidence quality:** For S001's top candidate, read the attached `evidence_chunks`; verify they contain relevant teacher profile text (subjects, bio, scores).
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
 |---|---|---|
-| AC: retrieve_candidates returns ranked list with scores and chunks | Integration | S002 retrieval test |
-| AC: Metadata pre-filter by subject, level, is_active | Unit + Integration | Metadata filter SQL + S002 retrieval |
+| AC: retrieve_candidates returns ranked list with scores and chunks | Integration | S001 retrieval test |
+| AC: Metadata pre-filter by subject, level, is_active | Unit + Integration | Metadata filter SQL + S001 retrieval |
 | AC: Vector semantic search via pgvector | Unit | Vector search mock |
 | AC: Merge and dedup by teacher_id | Unit | Merge/dedup logic test |
 | AC: Each candidate includes scores + evidence_chunks | Integration | Evidence chunks attached |
 | AC: Returns top_k=20 candidates | Unit | Vector search mock — top_k limit |
-| AC: Progressive filter relaxation when < 4 candidates | Unit + Integration | Filter relaxation + S004 retrieval |
+| AC: Progressive filter relaxation when < 4 candidates | Unit + Integration | Filter relaxation + S003 retrieval |
 | AC: Query embedding cached per request | Unit | Query intent builder (single embed call) |
 | AC: Latency under 500ms | Integration | Retrieval latency check |
 
@@ -149,5 +149,5 @@ If strict filters return fewer than 4 candidates:
 
 - Uses embeddings generated from `dataset/teachers.json` profiles (via TICKET-004).
 - Query intent is built from `dataset/new_students.json` student profiles.
-- For S002 (Math/Physics beginner): metadata filter should return T001 (Math, Physics), T004 (Physics, Chemistry), T005 (English, Math), T007 (Math, Chemistry), T008 (Physics, Programming), T010 (Chemistry, Math) — then vector search refines by semantic relevance.
-- For S004 (Japanese/History): metadata filter returns zero teachers — progressive relaxation should broaden to all active teachers and rank by general semantic similarity.
+- For S001 (Math/Physics beginner): metadata filter should return T001 (Math, Physics), T004 (Physics, Chemistry), T005 (English, Math), T007 (Math, Chemistry), T008 (Physics, Programming), T010 (Chemistry, Math) — then vector search refines by semantic relevance.
+- For S003 (Japanese/History): metadata filter returns zero teachers — progressive relaxation should broaden to all active teachers and rank by general semantic similarity.

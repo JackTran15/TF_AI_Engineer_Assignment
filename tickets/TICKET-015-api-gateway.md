@@ -57,7 +57,7 @@ flowchart LR
 
 ```json
 {
-  "student_id": "S002",
+  "student_id": "S001",
   "name": "Student 1",
   "age": 15,
   "learning_goals": ["Understand core Math concepts", "Build confidence in Physics"],
@@ -118,7 +118,7 @@ const statusCache = new LRUCache<string, RecommendationStatus>({
 ### Unit Tests
 - **Request validation — missing learning_goals:** POST with empty `learning_goals`; verify 400 response with descriptive error.
 - **Request validation — missing weak_areas:** POST without `weak_areas` field; verify 400.
-- **Request validation — valid payload:** POST with complete S002 data; verify 202 response with `request_id`.
+- **Request validation — valid payload:** POST with complete S001 data; verify 202 response with `request_id`.
 - **Rate limiter — within limit:** Send 5 requests from same IP within 1 minute; verify all return 202.
 - **Rate limiter — exceeded:** Send 6th request from same IP within 1 minute; verify 429 with `Retry-After` header.
 - **Response schema — processing:** Mock a `processing` status; verify GET returns compact payload with `retry_after_seconds` and no result data.
@@ -126,14 +126,14 @@ const statusCache = new LRUCache<string, RecommendationStatus>({
 - **Idempotency:** POST the same student profile twice within 60s; verify same `request_id` is returned (not a duplicate).
 
 ### Integration Tests
-- **POST + GET polling cycle:** POST S002 recommendation; poll GET until `status=completed`; verify the full response matches the output contract JSON shape from architecture.md.
+- **POST + GET polling cycle:** POST S001 recommendation; poll GET until `status=completed`; verify the full response matches the output contract JSON shape from architecture.md.
 - **Cache hit verification:** POST a request, wait for processing, then GET 10 times in rapid succession; verify cache is hit (response time < 5ms for cached responses).
 - **OpenAPI spec:** GET `/docs`; verify Swagger UI renders. GET `/docs/json`; verify the OpenAPI schema includes both endpoints with correct request/response schemas.
 - **X-Request-Id header:** POST and GET; verify both responses include `X-Request-Id` header.
 - **Error response for unknown request_id:** GET `/recommendations/nonexistent`; verify 404 response.
 
 ### E2E / Manual Tests
-- **Full recommendation via API:** POST S002 profile via API -> poll GET until completed -> verify full response with `top_1`, `top_3_alternatives`, explanations, and citations. Cross-reference teacher data against `teachers.json`.
+- **Full recommendation via API:** POST S001 profile via API -> poll GET until completed -> verify full response with `top_1`, `top_3_alternatives`, explanations, and citations. Cross-reference teacher data against `teachers.json`.
 - **Rate limit test:** Use a load testing tool to send 10 requests from the same IP in 1 minute; verify the first 5 succeed and the remaining 5 return 429.
 - **OpenAPI validation:** Open `/docs` in a browser; verify all endpoints are documented, try-it-out buttons work.
 
@@ -151,5 +151,5 @@ const statusCache = new LRUCache<string, RecommendationStatus>({
 
 ## Dataset References
 
-- `dataset/new_students.json` provides the test payloads for POST requests. S002 is the primary happy-path test case.
+- `dataset/new_students.json` provides the test payloads for POST requests. S001 is the primary happy-path test case.
 - `dataset/teachers.json` data appears in the completed recommendation response (teacher names, scores, etc.).

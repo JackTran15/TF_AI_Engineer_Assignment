@@ -114,13 +114,13 @@ def create_hitl_case(request_id, trigger_reason, candidates, citation_gaps):
 - **Case status transitions:** Verify `pending` -> `in_review` -> `rerun_triggered` transitions. Verify invalid transitions (e.g., `resolved` -> `pending`) are rejected.
 
 ### Integration Tests
-- **Full HITL cycle:** Trigger HITL for S004 (low confidence) -> create case -> reviewer adds note "prioritize general teaching skills" -> trigger rerun -> verify new recommendation runs with notes as constraints -> verify both pre-HITL and post-HITL traces in `pipeline_trace_steps`.
+- **Full HITL cycle:** Trigger HITL for S003 (low confidence) -> create case -> reviewer adds note "prioritize general teaching skills" -> trigger rerun -> verify new recommendation runs with notes as constraints -> verify both pre-HITL and post-HITL traces in `pipeline_trace_steps`.
 - **Rerun uses notes as constraints:** After adding a correction note, trigger rerun; verify ToolCallAgent receives `human_notes_version` and adjusts retrieval (e.g., broader subject matching).
 - **Citation revalidation on rerun:** After rerun, verify CitationAgent re-validates all claims (not reusing old citations). Verify new `recommendation_citations` rows are created.
 - **Dual trace storage:** Query `pipeline_trace_steps` for the original and rerun request; verify both sets of traces exist.
 
 ### E2E / Manual Tests
-- **Sales console walkthrough:** Open the HITL console; view S004's case (low confidence, no matching teachers); add a correction note; trigger rerun; verify updated recommendations are displayed. Verify the case status transitions from `pending` -> `in_review` -> `resolved`.
+- **Sales console walkthrough:** Open the HITL console; view S003's case (low confidence, no matching teachers); add a correction note; trigger rerun; verify updated recommendations are displayed. Verify the case status transitions from `pending` -> `in_review` -> `resolved`.
 - **Audit trail verification:** After a full HITL cycle, query `hitl_cases` and `hitl_edits`; verify the complete history is recorded with editor IDs and timestamps.
 
 ### Requirement Coverage Matrix
@@ -139,5 +139,5 @@ def create_hitl_case(request_id, trigger_reason, candidates, citation_gaps):
 
 ## Dataset References
 
-- S004 from `dataset/new_students.json` (Japanese/History goals) is the primary test case for HITL trigger — no matching teachers exist in `dataset/teachers.json`.
-- After HITL correction notes (e.g., "match with teachers who have strong communication and patience"), the rerun may match S004 with T003 (English, structured, patience=97) or T009 (English, structured, communication=97) as "best available" teachers.
+- S003 from `dataset/new_students.json` (Japanese/History goals) is the primary test case for HITL trigger — no matching teachers exist in `dataset/teachers.json`.
+- After HITL correction notes (e.g., "match with teachers who have strong communication and patience"), the rerun may match S003 with T003 (English, structured, patience=97) or T009 (English, structured, communication=97) as "best available" teachers.

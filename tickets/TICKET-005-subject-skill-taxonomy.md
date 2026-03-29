@@ -85,9 +85,9 @@ function normalizeWeakAreas(rawAreas: string[]): NormalizedSkill[] {
 }
 ```
 
-### Edge Case: Student S004 (Japanese/History)
+### Edge Case: Student S003 (Japanese/History)
 
-Student S004 has goals and weak areas in Japanese and East Asian history. No teachers in the current pool cover these subjects. The taxonomy should:
+Student S003 has goals and weak areas in Japanese and East Asian history. No teachers in the current pool cover these subjects. The taxonomy should:
 1. Still create skill entries (even without a parent subject match to a teacher).
 2. Mark these as `is_active = true` so future teachers can be mapped.
 3. The recommendation pipeline (TICKET-007) will handle the "no matching teacher" case gracefully.
@@ -111,9 +111,9 @@ Student S004 has goals and weak areas in Japanese and East Asian history. No tea
 ### Integration Tests
 - **Seed data completeness:** Run the taxonomy seed script; verify `subjects` table contains exactly 5 entries (Math, Physics, English, Chemistry, Programming). Verify `skills` table contains all 9 skills from `new_students.json` weak areas. Verify `skill_aliases` table contains expected mappings.
 - **Normalization against all test students:** Run `normalizeWeakAreas` for each student's weak areas from `new_students.json`:
-  - S002: Algebra -> `algebra` (high), Geometry -> `geometry` (high), Newton's Laws -> `newtons_laws` (high).
-  - S003: Python basics -> `python_basics` (high), Statistics -> `statistics` (high), Data structures -> `data_structures` (high).
-  - S004: Japanese grammar -> `japanese_grammar` (low — no parent subject with teachers), Kanji writing -> `kanji_writing` (low), Modern Asian history -> `modern_asian_history` (low).
+  - S001: Algebra -> `algebra` (high), Geometry -> `geometry` (high), Newton's Laws -> `newtons_laws` (high).
+  - S002: Python basics -> `python_basics` (high), Statistics -> `statistics` (high), Data structures -> `data_structures` (high).
+  - S003: Japanese grammar -> `japanese_grammar` (low — no parent subject with teachers), Kanji writing -> `kanji_writing` (low), Modern Asian history -> `modern_asian_history` (low).
 - **Goal normalization against all test students:** Run `normalizeGoals` for each student's learning goals; verify subject IDs are returned for known subjects.
 
 ### E2E / Manual Tests

@@ -58,13 +58,13 @@ These weights are provisional and should be recalibrated from production outcome
 
 ---
 
-## 3) Student S002 — "Student 1" (Math / Physics, Beginner, Structured)
+## 3) Student S001 — "Student 1" (Math / Physics, Beginner, Structured)
 
 ### Input Profile
 
 ```json
 {
-  "id": "S002",
+  "id": "S001",
   "name": "Student 1",
   "age": 15,
   "learning_goals": ["Understand core Math concepts", "Build confidence in Physics"],
@@ -133,7 +133,7 @@ heuristic_score = 0.35*0.97 + 0.20*1.00 + 0.15*0.87 + 0.15*0.85 + 0.15*0.96
 
 ### Step 4: LLM Reranking
 
-The LLM reranker evaluates the shortlisted candidates with retrieved evidence and holistic context about the student's goals. For S002 (Math + Physics beginner wanting structured fundamentals), the reranker confirms the heuristic ordering because T001 is a clear best fit with full subject coverage and strong evidence support.
+The LLM reranker evaluates the shortlisted candidates with retrieved evidence and holistic context about the student's goals. For S001 (Math + Physics beginner wanting structured fundamentals), the reranker confirms the heuristic ordering because T001 is a clear best fit with full subject coverage and strong evidence support.
 
 | Rank | Teacher | Heuristic | LLM Relevance | Final Score | Reranker Rationale |
 |---|---|---|---|---|---|
@@ -151,12 +151,12 @@ The LLM reranker evaluates the shortlisted candidates with retrieved evidence an
 - **Gate result:** PASS
 - **Status:** `completed`
 
-### Final Output — S002
+### Final Output — S001
 
 ```json
 {
-  "request_id": "req_s002_001",
-  "student_id": "S002",
+  "request_id": "req_s001_001",
+  "student_id": "S001",
   "status": "completed",
   "pipeline_run": {
     "candidates_filtered": 7,
@@ -261,13 +261,13 @@ The LLM reranker evaluates the shortlisted candidates with retrieved evidence an
 
 ---
 
-## 4) Student S003 — "Student 2" (Programming / Math for Data Science, Beginner, Structured)
+## 4) Student S002 — "Student 2" (Programming / Math for Data Science, Beginner, Structured)
 
 ### Input Profile
 
 ```json
 {
-  "id": "S003",
+  "id": "S002",
   "name": "Student 2",
   "age": 19,
   "learning_goals": ["Learn Python and data science", "Understand statistics for ML"],
@@ -354,12 +354,12 @@ The reranker identifies a critical insight the heuristic misses: T002 is the **o
 - **Gate result:** PASS
 - **Status:** `completed`
 
-### Final Output — S003
+### Final Output — S002
 
 ```json
 {
-  "request_id": "req_s003_001",
-  "student_id": "S003",
+  "request_id": "req_s002_001",
+  "student_id": "S002",
   "status": "completed",
   "pipeline_run": {
     "candidates_filtered": 7,
@@ -463,13 +463,13 @@ The reranker identifies a critical insight the heuristic misses: T002 is the **o
 
 ---
 
-## 5) Student S004 — "Student 3" (Japanese / History, Beginner, Structured) — HITL Handoff
+## 5) Student S003 — "Student 3" (Japanese / History, Beginner, Structured) — HITL Handoff
 
 ### Input Profile
 
 ```json
 {
-  "id": "S004",
+  "id": "S003",
   "name": "Student 3",
   "age": 22,
   "learning_goals": ["Achieve conversational Japanese", "Study East Asian history for university entrance"],
@@ -527,12 +527,12 @@ No candidates passed the metadata filter. The pipeline cannot proceed to heurist
 - **Status:** `hitl_review`
 - **Trigger reason:** `no_matching_teachers`
 
-### Final Output — S004
+### Final Output — S003
 
 ```json
 {
-  "request_id": "req_s004_001",
-  "student_id": "S004",
+  "request_id": "req_s003_001",
+  "student_id": "S003",
   "status": "hitl_review",
   "pipeline_run": {
     "candidates_filtered": 0,
@@ -543,9 +543,9 @@ No candidates passed the metadata filter. The pipeline cannot proceed to heurist
     "short_circuit_reason": "no_candidates_after_metadata_filter"
   },
   "hitl_case": {
-    "case_id": "hitl_s004_001",
+    "case_id": "hitl_s003_001",
     "trigger_reason": "no_matching_teachers",
-    "details": "Student S004 requires Japanese and History teachers. No teacher in the current pool covers either subject. The platform's teacher inventory does not include Japanese or History specialists.",
+    "details": "Student S003 requires Japanese and History teachers. No teacher in the current pool covers either subject. The platform's teacher inventory does not include Japanese or History specialists.",
     "recommended_action": "Recruit teachers covering Japanese and/or History, or notify the student that these subjects are not currently available."
   },
   "top_1": null,
@@ -559,37 +559,37 @@ No candidates passed the metadata filter. The pipeline cannot proceed to heurist
 
 | Student | Goal Subjects | Candidates | Top Match | Score | Status |
 |---|---|---|---|---|---|
-| S002 "Student 1" | Math, Physics | 7 | T001 Sarah Mitchell | 0.96 | `completed` |
-| S003 "Student 2" | Programming, Math | 7 | T002 James Carter | 0.82 | `completed` |
-| S004 "Student 3" | Japanese, History | 0 | — | — | `hitl_review` |
+| S001 "Student 1" | Math, Physics | 7 | T001 Sarah Mitchell | 0.96 | `completed` |
+| S002 "Student 2" | Programming, Math | 7 | T002 James Carter | 0.82 | `completed` |
+| S003 "Student 3" | Japanese, History | 0 | — | — | `hitl_review` |
 
 ### Pipeline Trace Summary
 
 ```mermaid
 flowchart LR
-    subgraph s002 ["S002 — Math/Physics"]
+    subgraph s001 ["S001 — Math/Physics"]
+        s001_filter["Filter: 7 of 10"]
+        s001_score["Heuristic: T001 = 0.94"]
+        s001_rerank["Rerank: T001 confirmed"]
+        s001_gate["Gate: PASS (0.92)"]
+        s001_out["completed"]
+        s001_filter --> s001_score --> s001_rerank --> s001_gate --> s001_out
+    end
+
+    subgraph s002 ["S002 — Programming/Math"]
         s002_filter["Filter: 7 of 10"]
-        s002_score["Heuristic: T001 = 0.94"]
-        s002_rerank["Rerank: T001 confirmed"]
-        s002_gate["Gate: PASS (0.92)"]
+        s002_score["Heuristic: T007 = 0.84"]
+        s002_rerank["Rerank: T002 promoted"]
+        s002_gate["Gate: PASS (0.78)"]
         s002_out["completed"]
         s002_filter --> s002_score --> s002_rerank --> s002_gate --> s002_out
     end
 
-    subgraph s003 ["S003 — Programming/Math"]
-        s003_filter["Filter: 7 of 10"]
-        s003_score["Heuristic: T007 = 0.84"]
-        s003_rerank["Rerank: T002 promoted"]
-        s003_gate["Gate: PASS (0.78)"]
-        s003_out["completed"]
-        s003_filter --> s003_score --> s003_rerank --> s003_gate --> s003_out
-    end
-
-    subgraph s004 ["S004 — Japanese/History"]
-        s004_filter["Filter: 0 of 10"]
-        s004_gate["Gate: FAIL (0.00)"]
-        s004_out["hitl_review"]
-        s004_filter --> s004_gate --> s004_out
+    subgraph s003 ["S003 — Japanese/History"]
+        s003_filter["Filter: 0 of 10"]
+        s003_gate["Gate: FAIL (0.00)"]
+        s003_out["hitl_review"]
+        s003_filter --> s003_gate --> s003_out
     end
 ```
 

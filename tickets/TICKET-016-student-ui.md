@@ -99,14 +99,14 @@ Each card displays:
 - **Best match badge:** Verify rank 1 card has a distinct visual indicator (e.g., gold badge, "Best Match" label).
 
 ### Integration Tests
-- **Form submit -> API call:** Fill form with S002 data and submit; verify `POST /recommendations` is called with the correct payload. Verify `request_id` is stored for polling.
-- **Full polling cycle:** Submit S002 via UI form; mock API returns `processing` twice then `completed`; verify loading state is shown, then results are rendered.
+- **Form submit -> API call:** Fill form with S001 data and submit; verify `POST /recommendations` is called with the correct payload. Verify `request_id` is stored for polling.
+- **Full polling cycle:** Submit S001 via UI form; mock API returns `processing` twice then `completed`; verify loading state is shown, then results are rendered.
 - **Error state rendering:** Submit form; mock API returns `processing` then `failed`; verify error message is displayed with retry button. Click retry; verify new request is made.
 - **HITL state rendering:** Mock API returning `status=hitl_review`; verify "under manual review" message is displayed.
 
 ### E2E / Manual Tests
-- **Happy path — S002:** Open browser, fill form with S002 data (goals: "Understand core Math concepts" + "Build confidence in Physics", weak areas: Algebra/Geometry/Newton's Laws, level: beginner, style: structured). Submit, wait for results, verify 4 teacher recommendation cards displayed with explanations and citations. Verify T001 appears in results.
-- **Edge case — S004:** Fill form with S004 data (Japanese/History goals). Submit, verify the UI handles the response (either HITL review message or low-confidence results).
+- **Happy path — S001:** Open browser, fill form with S001 data (goals: "Understand core Math concepts" + "Build confidence in Physics", weak areas: Algebra/Geometry/Newton's Laws, level: beginner, style: structured). Submit, wait for results, verify 4 teacher recommendation cards displayed with explanations and citations. Verify T001 appears in results.
+- **Edge case — S003:** Fill form with S003 data (Japanese/History goals). Submit, verify the UI handles the response (either HITL review message or low-confidence results).
 - **Mobile responsiveness:** Open the app on a mobile viewport (375px wide); verify the form and result cards render correctly without horizontal scroll.
 - **Retry after failure:** Simulate network failure on POST; verify error message is shown; click retry; verify new request succeeds.
 
@@ -125,5 +125,5 @@ Each card displays:
 
 ## Dataset References
 
-- `dataset/new_students.json` provides test data for form filling: S002 (Math/Physics, beginner, structured), S003 (Programming/Math, beginner, structured), S004 (Japanese/History, beginner, structured).
+- `dataset/new_students.json` provides test data for form filling: S001 (Math/Physics, beginner, structured), S002 (Programming/Math, beginner, structured), S003 (Japanese/History, beginner, structured).
 - `dataset/teachers.json` teacher names and data appear in the recommendation result cards.

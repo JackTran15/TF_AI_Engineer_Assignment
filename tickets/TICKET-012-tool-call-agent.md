@@ -129,7 +129,7 @@ tools = [
 ## Test Plan
 
 ### Unit Tests
-- **Tool selection — standard case:** Pass S002 profile (Math/Physics goals); verify agent selects `semantic_search` with `subject_filter=['math','physics']`.
+- **Tool selection — standard case:** Pass S001 profile (Math/Physics goals); verify agent selects `semantic_search` with `subject_filter=['math','physics']`.
 - **Tool selection — web_search trigger:** Mock `semantic_search` returning 2 low-similarity candidates; verify `web_search` is invoked.
 - **Tool selection — no web_search for normal quality:** Mock `semantic_search` returning 8 good candidates; verify `web_search` is NOT invoked.
 - **Max tool calls enforcement:** Set max to 3; have agent attempt 5 calls; verify execution stops at 3 with a warning log.
@@ -137,17 +137,17 @@ tools = [
 - **Domain allowlist:** Attempt `web_search` with a non-allowed domain; verify it is blocked.
 - **Trace logging:** Execute 2 tool calls; verify trace contains 2 entries with `tool_name`, `request`, `response_hash`, `latency_ms`.
 - **Model routing — cheap tier:** Pass a simple query-normalization task; verify cheap model tier is selected.
-- **Model routing — balanced tier:** Pass normal retrieval planning for S002; verify balanced model tier is selected.
+- **Model routing — balanced tier:** Pass normal retrieval planning for S001; verify balanced model tier is selected.
 - **Model routing — high-performance escalation:** Pass contradictory reviewer constraints; verify escalation to high-performance tier.
 
 ### Integration Tests
-- **Full retrieval for S002:** Run ToolCallAgent with S002 profile; verify it executes `semantic_search`, returns evidence candidates including T001 chunks, and writes a trace to `pipeline_trace_steps`.
+- **Full retrieval for S001:** Run ToolCallAgent with S001 profile; verify it executes `semantic_search`, returns evidence candidates including T001 chunks, and writes a trace to `pipeline_trace_steps`.
 - **Fallback expansion:** Mock initial `semantic_search` returning only 2 candidates; verify agent retries with expanded queries and returns more candidates.
 - **Human notes integration:** Pass `human_notes_version` with a constraint; verify the agent includes it in retrieval planning (tighter filters or emphasis).
 
 ### E2E / Manual Tests
-- **Trace inspection:** Complete a full recommendation for S002; open `pipeline_trace_steps` and read the `tool_call_retrieval` entry; verify every tool call is logged with inputs and outputs.
-- **Evidence quality check:** Review the evidence packet for S002; verify chunks are relevant to the student's goals and weak areas.
+- **Trace inspection:** Complete a full recommendation for S001; open `pipeline_trace_steps` and read the `tool_call_retrieval` entry; verify every tool call is logged with inputs and outputs.
+- **Evidence quality check:** Review the evidence packet for S001; verify chunks are relevant to the student's goals and weak areas.
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
@@ -155,7 +155,7 @@ tools = [
 | AC: Uses only approved tools | Unit | Tool selection tests |
 | AC: No free-form claims (evidence only) | Unit | Output structure verification |
 | AC: Retrieval planning based on profile | Unit | Tool selection — standard case |
-| AC: Evidence gathering with relevance | Integration | Full retrieval for S002 |
+| AC: Evidence gathering with relevance | Integration | Full retrieval for S001 |
 | AC: Every tool call traced | Unit + Integration | Trace logging + pipeline_trace_steps |
 | AC: Bounded execution (max calls + timeout) | Unit | Max tool calls + timeout tests |
 | AC: Fallback expansion on low quality | Unit + Integration | Web_search trigger + fallback expansion |
@@ -167,4 +167,4 @@ tools = [
 ## Dataset References
 
 - ToolCallAgent retrieves evidence from teacher profiles originating from `dataset/teachers.json` (embedded via TICKET-004).
-- Student profiles from `dataset/new_students.json` drive the retrieval queries. S002's goals and weak areas determine the `semantic_search` parameters.
+- Student profiles from `dataset/new_students.json` drive the retrieval queries. S001's goals and weak areas determine the `semantic_search` parameters.

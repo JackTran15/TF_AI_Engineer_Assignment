@@ -152,7 +152,7 @@ scenarios:
   - Queue depth peaked during burst and returned to near-zero after completion.
   - Worker throughput is displayed with correct profiles/min and recommendations/min.
   - Error rate is displayed and remained < 1% during baseline.
-  - HITL trigger rate is shown (should be non-zero for S004-like students).
+  - HITL trigger rate is shown (should be non-zero for S003-like students).
   - Citation coverage rate is shown and >= 95% for successful recommendations.
 - **DLQ inspection:** After the retry policy test, inspect the DLQ; verify it contains only messages that failed all 3 retries (not prematurely routed messages).
 - **SLO alert validation:** Artificially breach the P95 latency SLO (add artificial delay); verify the alert fires within the configured window.

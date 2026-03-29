@@ -40,9 +40,9 @@ The normalization step maps free-text learning goals and weak areas to canonical
 - [ ] `PUT /api/students/:student_id` updates an existing student, increments `profile_version`, and re-enqueues.
 - [ ] `GET /api/students/:student_id` returns the student profile with both raw and normalized fields.
 - [ ] Normalization handles the provided test data correctly:
-  - S002: "Algebra", "Geometry" -> Math subject; "Newton's Laws" -> Physics subject.
-  - S003: "Python basics", "Data structures" -> Programming subject; "Statistics" -> Math subject.
-  - S004: "Japanese grammar", "Kanji writing" -> no matching teacher subject (graceful handling).
+  - S001: "Algebra", "Geometry" -> Math subject; "Newton's Laws" -> Physics subject.
+  - S002: "Python basics", "Data structures" -> Programming subject; "Statistics" -> Math subject.
+  - S003: "Japanese grammar", "Kanji writing" -> no matching teacher subject (graceful handling).
 
 ## Technical Details
 
@@ -54,7 +54,7 @@ POST /api/students
 Content-Type: application/json
 
 {
-  "id": "S002",
+  "id": "S001",
   "name": "Student 1",
   "age": 15,
   "learning_goals": [
@@ -70,7 +70,7 @@ Content-Type: application/json
 **Response**
 ```json
 {
-  "student_id": "S002",
+  "student_id": "S001",
   "profile_version": 1,
   "status": "looking_for_new_coach",
   "indexing_job_id": "job_def456",
@@ -114,17 +114,17 @@ The normalization service maps free-text student inputs to canonical taxonomy en
 - **Status default:** Verify new student records are created with `status = 'looking_for_new_coach'`.
 
 ### Integration Tests
-- **POST + DB verification:** POST student S002 payload; query `students` table and verify row exists with `status = 'looking_for_new_coach'`, `learning_goals_raw` as JSONB, and `profile_version = 1`. Query `student_goal_subjects` for S002; verify Math and Physics subject mappings. Query `student_weak_skills` for S002; verify 3 skill entries (Algebra, Geometry, Newton's Laws).
-- **Indexing job enqueue:** After POST S002, verify a profile indexing job is enqueued with `{ entity_type: 'student', entity_id: 'S002', profile_version: 1 }`.
-- **PUT update + re-normalization:** PUT update to S002 adding a new weak area; verify `profile_version = 2`, new skills added to `student_weak_skills`, and re-index job enqueued.
-- **GET student:** POST S002, then GET `/api/students/S002`; verify response includes both raw and normalized fields.
+- **POST + DB verification:** POST student S001 payload; query `students` table and verify row exists with `status = 'looking_for_new_coach'`, `learning_goals_raw` as JSONB, and `profile_version = 1`. Query `student_goal_subjects` for S001; verify Math and Physics subject mappings. Query `student_weak_skills` for S001; verify 3 skill entries (Algebra, Geometry, Newton's Laws).
+- **Indexing job enqueue:** After POST S001, verify a profile indexing job is enqueued with `{ entity_type: 'student', entity_id: 'S001', profile_version: 1 }`.
+- **PUT update + re-normalization:** PUT update to S001 adding a new weak area; verify `profile_version = 2`, new skills added to `student_weak_skills`, and re-index job enqueued.
+- **GET student:** POST S001, then GET `/api/students/S001`; verify response includes both raw and normalized fields.
 
 ### E2E / Manual Tests
 - **Upload all 3 students:** POST all 3 students from `dataset/new_students.json` via API. Verify:
-  - S002: `student_goal_subjects` contains Math and Physics; `student_weak_skills` contains Algebra, Geometry, Newton's Laws.
-  - S003: `student_goal_subjects` contains Programming and Math; `student_weak_skills` contains Python basics, Statistics, Data structures.
-  - S004: `student_goal_subjects` may be empty or contain low-confidence entries (no matching teacher subjects); `student_weak_skills` contains Japanese grammar, Kanji writing, Modern Asian history with `confidence: low`.
-- **Graceful handling of S004:** Verify S004 is accepted and stored despite having no matching teacher subjects. Verify `status = 'looking_for_new_coach'` is set.
+  - S001: `student_goal_subjects` contains Math and Physics; `student_weak_skills` contains Algebra, Geometry, Newton's Laws.
+  - S002: `student_goal_subjects` contains Programming and Math; `student_weak_skills` contains Python basics, Statistics, Data structures.
+  - S003: `student_goal_subjects` may be empty or contain low-confidence entries (no matching teacher subjects); `student_weak_skills` contains Japanese grammar, Kanji writing, Modern Asian history with `confidence: low`.
+- **Graceful handling of S003:** Verify S003 is accepted and stored despite having no matching teacher subjects. Verify `status = 'looking_for_new_coach'` is set.
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
@@ -137,13 +137,13 @@ The normalization service maps free-text student inputs to canonical taxonomy en
 | AC: Stores raw JSONB + normalized mappings | Integration | POST+DB verification (raw + normalized) |
 | AC: Indexing job enqueued | Integration | Indexing job enqueue verification |
 | AC: PUT updates + re-enqueues | Integration | PUT update + re-normalization |
+| AC: S001 normalization correct | E2E | Upload all 3 students — S001 check |
 | AC: S002 normalization correct | E2E | Upload all 3 students — S002 check |
-| AC: S003 normalization correct | E2E | Upload all 3 students — S003 check |
-| AC: S004 graceful no-match handling | E2E | Graceful handling of S004 |
+| AC: S003 graceful no-match handling | E2E | Graceful handling of S003 |
 
 ## Dataset References
 
 - **`dataset/new_students.json`:** 3 student records:
-  - **S002** (age 15, beginner, structured): Goals in Math and Physics, weak in Algebra/Geometry/Newton's Laws.
-  - **S003** (age 19, beginner, structured): Goals in Python/data science and statistics for ML, weak in Python basics/Statistics/Data structures.
-  - **S004** (age 22, beginner, structured): Goals in Japanese and East Asian history — tests edge case where no matching teacher subjects exist in the current teacher pool.
+  - **S001** (age 15, beginner, structured): Goals in Math and Physics, weak in Algebra/Geometry/Newton's Laws.
+  - **S002** (age 19, beginner, structured): Goals in Python/data science and statistics for ML, weak in Python basics/Statistics/Data structures.
+  - **S003** (age 22, beginner, structured): Goals in Japanese and East Asian history — tests edge case where no matching teacher subjects exist in the current teacher pool.

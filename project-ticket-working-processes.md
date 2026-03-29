@@ -252,4 +252,4 @@ All tickets reference these design documents for detailed specifications:
 | File | Content | Used By |
 |---|---|---|
 | [dataset/teachers.json](dataset/teachers.json) | 10 teacher profiles (T001-T010) | TICKET-001 (seed), TICKET-002 (ingestion), TICKET-004 (embedding), TICKET-007 (scoring) |
-| [dataset/new_students.json](dataset/new_students.json) | 3 student profiles (S002-S004) | TICKET-001 (seed), TICKET-003 (ingestion), TICKET-006 (retrieval queries), TICKET-010 (explanations) |
+| [dataset/new_students.json](dataset/new_students.json) | 3 student profiles (S001-S003) | TICKET-001 (seed), TICKET-003 (ingestion), TICKET-006 (retrieval queries), TICKET-010 (explanations) |

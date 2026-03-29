@@ -117,7 +117,7 @@ flowchart TD
 
 ### Unit Tests
 - **Teacher chunking:** Pass T001 profile to chunking service; verify 4-5 chunks produced (identity, subject, scores, bio, composite). Verify each chunk contains expected text fragments.
-- **Student chunking:** Pass S002 profile to chunking service; verify 2-3 chunks produced (goals, weak areas, composite).
+- **Student chunking:** Pass S001 profile to chunking service; verify 2-3 chunks produced (goals, weak areas, composite).
 - **Embedding mock:** Mock the embedding API; verify `embedBatch()` is called once per batch (not per chunk). Verify returned vectors have correct dimension (1536).
 - **Vector ID generation:** Verify `teacher:T001:chunk:03:v1` format is produced. Verify version changes produce different IDs.
 - **Idempotency dedup:** Process the same job twice (same `entity_id` + `profile_version`); verify second run produces no new chunks or vectors.

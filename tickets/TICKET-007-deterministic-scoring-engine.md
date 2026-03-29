@@ -78,7 +78,7 @@ def compute_skill_gap_coverage(student: Student, teacher: Teacher) -> float:
     return coverage_ratio * 0.6 + avg_relevant_score * 0.4
 ```
 
-### Score Breakdown Example (Student S002 vs Teacher T001)
+### Score Breakdown Example (Student S001 vs Teacher T001)
 
 ```json
 {
@@ -101,8 +101,8 @@ def compute_skill_gap_coverage(student: Student, teacher: Teacher) -> float:
 }
 ```
 
-**Rationale for T001 scoring high for S002:**
-- S002 needs Math and Physics (beginner, structured).
+**Rationale for T001 scoring high for S001:**
+- S001 needs Math and Physics (beginner, structured).
 - T001 teaches Math and Physics, structured style, 8 years experience, preferred levels include beginner.
 - Skill scores: subject_knowledge=92, communication=85, patience=90, satisfaction=4.8.
 
@@ -115,7 +115,7 @@ Each scoring run writes a `pipeline_trace_steps` row:
   "step_name": "deterministic_scoring",
   "step_order": 3,
   "input_summary": {
-    "student_id": "S002",
+    "student_id": "S001",
     "candidate_count": 8,
     "weight_config": { ... }
   },
@@ -137,26 +137,26 @@ Each scoring run writes a `pipeline_trace_steps` row:
 ## Test Plan
 
 ### Unit Tests
-- **Skill-gap coverage — full overlap:** T001 (Math, Physics) vs S002 (Math, Physics goals); verify `skill_gap_coverage` close to 0.95 (high coverage + high scores).
-- **Skill-gap coverage — partial overlap:** T005 (English, Math) vs S002 (Math, Physics); verify `coverage_ratio = 0.5` (1/2 subjects matched).
-- **Skill-gap coverage — no overlap:** T009 (English only) vs S002 (Math, Physics); verify `skill_gap_coverage = 0.0`.
-- **Teaching-style fit — exact match:** S002 (structured) vs T001 (structured); verify `teaching_style_fit = 1.0`.
-- **Teaching-style fit — mismatch:** S002 (structured) vs T002 (exploratory); verify `teaching_style_fit = 0.3`.
-- **Experience suitability — level match:** T001 (preferred: beginner, intermediate) vs S002 (beginner); verify `experience_suitability` includes level bonus of 1.0.
-- **Experience suitability — level mismatch:** T006 (preferred: advanced only) vs S002 (beginner); verify penalty applied (0.4).
+- **Skill-gap coverage — full overlap:** T001 (Math, Physics) vs S001 (Math, Physics goals); verify `skill_gap_coverage` close to 0.95 (high coverage + high scores).
+- **Skill-gap coverage — partial overlap:** T005 (English, Math) vs S001 (Math, Physics); verify `coverage_ratio = 0.5` (1/2 subjects matched).
+- **Skill-gap coverage — no overlap:** T009 (English only) vs S001 (Math, Physics); verify `skill_gap_coverage = 0.0`.
+- **Teaching-style fit — exact match:** S001 (structured) vs T001 (structured); verify `teaching_style_fit = 1.0`.
+- **Teaching-style fit — mismatch:** S001 (structured) vs T002 (exploratory); verify `teaching_style_fit = 0.3`.
+- **Experience suitability — level match:** T001 (preferred: beginner, intermediate) vs S001 (beginner); verify `experience_suitability` includes level bonus of 1.0.
+- **Experience suitability — level mismatch:** T006 (preferred: advanced only) vs S001 (beginner); verify penalty applied (0.4).
 - **Communication + satisfaction normalization:** T001 communication=85 -> 0.85; satisfaction=4.8 -> 0.96; verify normalized values.
 - **Configurable weights:** Override weights via config; verify score changes accordingly.
 - **Determinism:** Run scoring twice with identical inputs; verify identical outputs.
 - **Edge case — no subjects:** Teacher with no overlapping subjects; verify `skill_gap_coverage = 0.0` and total score is not NaN.
 
 ### Integration Tests
-- **Full scoring pipeline:** Pass S002's candidate set (from retrieval) into `score_candidates()`; verify T001 scores highest. Verify T001 > T007 > T005 in ranking for S002.
+- **Full scoring pipeline:** Pass S001's candidate set (from retrieval) into `score_candidates()`; verify T001 scores highest. Verify T001 > T007 > T005 in ranking for S001.
 - **Score determinism across runs:** Score the same candidate set twice; verify all scores match exactly (bit-for-bit).
 - **Trace output:** After scoring, query `pipeline_trace_steps` for `step_name='deterministic_scoring'`; verify the row exists with correct `input_summary` (student_id, candidate_count) and `output_summary` (scored_count, top_score).
 
 ### E2E / Manual Tests
-- **Manual score verification for T001 vs S002:** Compute expected score by hand using the formula with default weights: `0.35 * skill_gap + 0.20 * style_fit + 0.15 * experience + 0.15 * communication + 0.15 * satisfaction`. Compare against engine output. Document the calculation.
-- **Full ranking of all teachers for S002:** Score all 10 teachers; verify the ordering is sensible (Math/Physics structured teachers rank highest for S002).
+- **Manual score verification for T001 vs S001:** Compute expected score by hand using the formula with default weights: `0.35 * skill_gap + 0.20 * style_fit + 0.15 * experience + 0.15 * communication + 0.15 * satisfaction`. Compare against engine output. Document the calculation.
+- **Full ranking of all teachers for S001:** Score all 10 teachers; verify the ordering is sensible (Math/Physics structured teachers rank highest for S001).
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
@@ -177,4 +177,4 @@ Each scoring run writes a `pipeline_trace_steps` row:
 
 - Teacher scores from `dataset/teachers.json` are the primary inputs to the scoring formula. Example: T001 has `subject_knowledge: 92, communication: 85, problem_solving: 88, patience: 90, student_satisfaction: 4.8`.
 - Student profiles from `dataset/new_students.json` provide the weak areas and preferences that drive skill-gap and style-fit calculations.
-- Expected top matches for S002 (Math/Physics, beginner, structured): T001 > T007 > T005 > T010 (all structured, math-covering teachers with high scores).
+- Expected top matches for S001 (Math/Physics, beginner, structured): T001 > T007 > T005 > T010 (all structured, math-covering teachers with high scores).

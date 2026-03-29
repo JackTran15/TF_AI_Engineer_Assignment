@@ -137,7 +137,7 @@ def generate_fallback_explanation(student, teacher, score_breakdown):
 ## Test Plan
 
 ### Unit Tests
-- **Prompt construction — full data:** Build prompt for T001 vs S002; verify prompt includes S002's goals ("Understand core Math concepts", "Build confidence in Physics"), weak areas ("Algebra", "Geometry", "Newton's Laws"), and T001's scores (subject_knowledge: 92, communication: 85).
+- **Prompt construction — full data:** Build prompt for T001 vs S001; verify prompt includes S001's goals ("Understand core Math concepts", "Build confidence in Physics"), weak areas ("Algebra", "Geometry", "Newton's Laws"), and T001's scores (subject_knowledge: 92, communication: 85).
 - **Prompt construction — empty bio:** Build prompt for a teacher with `bio: null`; verify no error and bio section is omitted or says "No bio available."
 - **Structured output parsing:** Mock LLM returning valid JSON with `summary`, `match_reasons`, `confidence`; verify parser extracts all fields.
 - **Structured output — malformed response:** Mock LLM returning plain text instead of JSON; verify graceful handling (fallback or retry).
@@ -145,7 +145,7 @@ def generate_fallback_explanation(student, teacher, score_breakdown):
 - **Confidence assignment:** Verify `high` is assigned when all evidence is strong, `medium` when some gaps exist, `low` when evidence is sparse.
 
 ### Integration Tests
-- **Full explanation generation for S002:** Pass S002's top-4 teachers and evidence chunks; generate 4 explanations; verify each explanation references S002's actual weak areas and each teacher's actual scores (not hallucinated data).
+- **Full explanation generation for S001:** Pass S001's top-4 teachers and evidence chunks; generate 4 explanations; verify each explanation references S001's actual weak areas and each teacher's actual scores (not hallucinated data).
 - **Trace output:** After generation, query `pipeline_trace_steps` for `step_name='explanation_generation'`; verify the entry includes model, latency, and token count.
 - **Explanation persistence:** Verify each explanation is written to `recommendation_explanations` with correct `result_id` and `llm_model`.
 - **LLM failure fallback integration:** Block LLM endpoint; run explanation generation; verify 4 fallback explanations are produced from score breakdowns.
@@ -153,13 +153,13 @@ def generate_fallback_explanation(student, teacher, score_breakdown):
 - **Cache invalidation path:** Increment teacher `profile_version`; rerun explanation generation; verify cache miss and fresh explanation generation occurs.
 
 ### E2E / Manual Tests
-- **Factual consistency check for S002:** Read generated explanations for S002's top-1 match; manually compare each data point mentioned (e.g., "Math score of 92") against `teachers.json`; verify no hallucinated subjects, scores, or experience years.
-- **Explanation quality review:** Read all 4 explanations for S002; verify each is distinct, references different aspects of the teacher, and reads naturally.
+- **Factual consistency check for S001:** Read generated explanations for S001's top-1 match; manually compare each data point mentioned (e.g., "Math score of 92") against `teachers.json`; verify no hallucinated subjects, scores, or experience years.
+- **Explanation quality review:** Read all 4 explanations for S001; verify each is distinct, references different aspects of the teacher, and reads naturally.
 
 ### Requirement Coverage Matrix
 | Acceptance Criterion | Test Type | Test Description |
 |---|---|---|
-| AC: Returns one explanation per teacher | Integration | Full explanation generation for S002 |
+| AC: Returns one explanation per teacher | Integration | Full explanation generation for S001 |
 | AC: Each has summary + match_reasons + confidence | Unit | Structured output parsing |
 | AC: Prompt includes student and teacher context | Unit | Prompt construction — full data |
 | AC: References actual data points | E2E/Manual | Factual consistency check |
@@ -173,4 +173,4 @@ def generate_fallback_explanation(student, teacher, score_breakdown):
 ## Dataset References
 
 - Teacher data from `dataset/teachers.json` is included in explanation prompts. Example: T001's bio "Specialises in breaking down complex Math and Physics concepts step by step" should appear in the prompt and may be referenced in the explanation.
-- Student data from `dataset/new_students.json` drives the explanation context. S002's weak areas (Algebra, Geometry, Newton's Laws) should be directly addressed in the explanation.
+- Student data from `dataset/new_students.json` drives the explanation context. S001's weak areas (Algebra, Geometry, Newton's Laws) should be directly addressed in the explanation.
