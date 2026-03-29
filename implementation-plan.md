@@ -1,5 +1,7 @@
 # Implementation Plan — AI Coaching Recommendation System
 
+This document is the source of truth for operational policy details (model routing, fallback behavior, and LLM cost controls). Other deliverables should reference this file to avoid duplicated policy text.
+
 ## 1) Delivery Approach
 
 Implement in iterative phases with production-safe defaults:

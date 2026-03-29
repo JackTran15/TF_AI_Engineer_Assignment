@@ -42,14 +42,14 @@ Implement the student-facing web application that allows students to submit thei
 
 ```mermaid
 flowchart TD
-    form["Student fills form\n(goals, weak_areas, level, style)"]
+    form["Student fills form (goals, weak_areas, level, style)"]
     validate["Client-side validation"]
-    submit["POST /recommendations\nReceive request_id"]
-    loading["Show loading state\nwith progress indicator"]
-    poll["Poll GET /recommendations/request_id\nevery 3 seconds"]
+    submit["POST /recommendations - receive request_id"]
+    loading["Show loading state with progress indicator"]
+    poll["Poll GET /recommendations/request_id every 3 seconds"]
     checkStatus{"Status?"}
-    completed["Render 4 teacher cards\nwith explanations + citations"]
-    failed["Show error message\n+ retry button"]
+    completed["Render 4 teacher cards with explanations + citations"]
+    failed["Show error message + retry button"]
     hitl["Show 'under review' message"]
 
     form --> validate

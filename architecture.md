@@ -1,5 +1,7 @@
 # Architecture — AI Coaching Recommendation System
 
+This document focuses on system structure and runtime interaction boundaries. Detailed operational policy (model routing, fallback decision logic, and cost controls) is centralized in `implementation-plan.md` to avoid duplicated guidance across files.
+
 ## 1) System Architecture Overview
 
 This architecture is designed for:
@@ -268,6 +270,7 @@ Optional advanced components (nice-to-have, not required for MVP):
 - Queue decoupling for burst tolerance and controlled worker scaling.
 - DLQ for hard failures and replay path.
 - Idempotent workers to avoid duplicate processing.
-- Graceful fallback when LLM provider is degraded.
 - Read replicas or cached status layer to handle high-frequency polling without overloading primary DB.
 - Request-level output deduplication keyed by `request_id` to keep responses consistent during retries.
+
+Provider-specific fallback strategy, retry policy, and model-tier escalation rules are defined in `implementation-plan.md` (source of truth).

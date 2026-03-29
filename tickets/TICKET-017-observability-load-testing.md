@@ -67,16 +67,16 @@ Implement observability infrastructure (dashboards, metrics, alerts) and load te
 ```mermaid
 flowchart LR
     subgraph sources["Data Sources"]
-        api["API Gateway\nlogs + metrics"]
-        workers["Workers\nbatch_run_logs"]
-        rag["RAG Orchestrator\npipeline_trace_steps"]
-        db["Database\nrecommendation_requests"]
+        api["API Gateway - logs + metrics"]
+        workers["Workers - batch_run_logs"]
+        rag["RAG Orchestrator - pipeline_trace_steps"]
+        db["Database - recommendation_requests"]
     end
 
     subgraph dashboard["Monitoring Dashboard"]
-        latency["Latency Panel\nP50/P95/P99"]
+        latency["Latency Panel - P50/P95/P99"]
         queue["Queue Depth Panel"]
-        throughput["Throughput Panel\nprofiles/min, recs/min"]
+        throughput["Throughput Panel - profiles/min, recs/min"]
         errors["Error Rate Panel"]
         hitl["HITL Rate Panel"]
         citation["Citation Coverage Panel"]

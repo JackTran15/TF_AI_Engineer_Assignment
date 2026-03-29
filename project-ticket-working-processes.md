@@ -174,17 +174,17 @@ The end-to-end pipeline that runs for each student recommendation request. Each 
 
 ```mermaid
 flowchart TD
-    studentInput["Student profile submitted\n(goals, weak_areas, level, style)\nSource: POST /recommendations"]
-    queue["Job queued\nrecommendationBatchWorker\npicks up eligible students"]
-    retrieval["Hybrid Retrieval\n(metadata filter + vector search)\nInput: student profile\nOutput: ~20 candidates + evidence chunks"]
-    scoring["Deterministic Scoring\n(skill-gap, style-fit, experience,\ncommunication, satisfaction)\nInput: candidates\nOutput: scored + sorted candidates"]
-    reranking["LLM Reranking\n(model-based relevance judgment)\nInput: top-10 scored candidates\nOutput: top-4 reranked with rationale"]
-    explanation["Explanation Generation\n(LLM per teacher)\nInput: top-4 teachers + student context\nOutput: summary + match_reasons per teacher"]
-    citation["Citation Validation\n(CitationAgent)\nInput: explanation drafts + evidence\nOutput: citation_set + coverage score"]
-    confGate{"Confidence\n>= 0.7?"}
-    citeGate{"Citation\ncoverage >= 0.95?"}
-    finalOutput["Final Output\ntop_1 + top_3_alternatives\nwith explanations + citations\nstatus = completed"]
-    hitl["HITL Review\nSales reviewer adds notes\nPipeline reruns with context\nstatus = hitl_review"]
+    studentInput["Student profile submitted (goals, weak_areas, level, style) - source: POST /recommendations"]
+    queue["Job queued - recommendationBatchWorker picks up eligible students"]
+    retrieval["Hybrid Retrieval (metadata filter + vector search) - input: student profile - output: ~20 candidates + evidence chunks"]
+    scoring["Deterministic Scoring (skill-gap, style-fit, experience, communication, satisfaction) - input: candidates - output: scored + sorted candidates"]
+    reranking["LLM Reranking (model-based relevance judgment) - input: top-10 scored candidates - output: top-4 reranked with rationale"]
+    explanation["Explanation Generation (LLM per teacher) - input: top-4 teachers + student context - output: summary + match_reasons per teacher"]
+    citation["Citation Validation (CitationAgent) - input: explanation drafts + evidence - output: citation_set + coverage score"]
+    confGate{"Confidence >= 0.7?"}
+    citeGate{"Citation coverage >= 0.95?"}
+    finalOutput["Final Output - top_1 + top_3_alternatives with explanations + citations - status = completed"]
+    hitl["HITL Review - sales reviewer adds notes and pipeline reruns with context - status = hitl_review"]
 
     studentInput --> queue
     queue --> retrieval
@@ -209,18 +209,18 @@ The shortest path to a working recommendation for one student:
 
 ```mermaid
 flowchart LR
-    T000["T-000\nRepo Init"] --> T001["T-001\nDB Schema"]
-    T001 --> T005["T-005\nTaxonomy"]
-    T005 --> T002["T-002\nTeacher\nIngestion"]
-    T005 --> T003["T-003\nStudent\nIngestion"]
-    T002 --> T004["T-004\nProfile\nBatch Worker"]
+    T000["T-000 Repo Init"] --> T001["T-001 DB Schema"]
+    T001 --> T005["T-005 Taxonomy"]
+    T005 --> T002["T-002 Teacher Ingestion"]
+    T005 --> T003["T-003 Student Ingestion"]
+    T002 --> T004["T-004 Profile Batch Worker"]
     T003 --> T004
-    T004 --> T006["T-006\nHybrid\nRetrieval"]
-    T006 --> T007["T-007\nScoring\nEngine"]
-    T007 --> T008["T-008\nLLM\nReranker"]
-    T008 --> T010["T-010\nExplanation\nGenerator"]
-    T010 --> T013["T-013\nOrchestrator\nAgent"]
-    T013 --> T015["T-015\nAPI\nGateway"]
+    T004 --> T006["T-006 Hybrid Retrieval"]
+    T006 --> T007["T-007 Scoring Engine"]
+    T007 --> T008["T-008 LLM Reranker"]
+    T008 --> T010["T-010 Explanation Generator"]
+    T010 --> T013["T-013 Orchestrator Agent"]
+    T013 --> T015["T-015 API Gateway"]
 ```
 
 ### Parallelization Opportunities

@@ -2,20 +2,22 @@
 
 Pipeline executed against [`dataset/teachers.json`](dataset/teachers.json) (10 teachers) and [`dataset/new_students.json`](dataset/new_students.json) (3 students).
 
+Scope note: the assignment context describes a production pool of 100 teachers. This execution output is an explicit demo run using the current repository dataset subset (10 teachers) to illustrate the same pipeline behavior and output contract.
+
 ---
 
 ## 1) Pipeline Overview
 
 ```mermaid
 flowchart TD
-    normalize["Step 1: Input Normalization\nMap raw goals and weak areas to canonical subjects"]
-    filter["Step 2: Metadata Pre-Filter\nFilter teachers by subject overlap with student goals"]
-    score["Step 3: Heuristic Pre-Ranking\nCreate provisional shortlist signals per candidate"]
-    rerank["Step 4: LLM Reranking\nUse retrieved evidence to decide final ordering"]
-    explain["Step 5: Explanation Generation\nLLM drafts structured explanation per top-4 teacher"]
-    gate["Step 6: Confidence and Citation Gate\nVerify confidence >= 0.7 and citation coverage >= 0.95"]
-    completed["Output: status = completed\ntop_1 + top_3_alternatives with explanations"]
-    hitl["Output: status = hitl_review\nRouted to Sales reviewer"]
+    normalize["Step 1: Input Normalization - map raw goals and weak areas to canonical subjects"]
+    filter["Step 2: Metadata Pre-Filter - filter teachers by subject overlap with student goals"]
+    score["Step 3: Heuristic Pre-Ranking - create provisional shortlist signals per candidate"]
+    rerank["Step 4: LLM Reranking - use retrieved evidence to decide final ordering"]
+    explain["Step 5: Explanation Generation - LLM drafts structured explanation per top-4 teacher"]
+    gate["Step 6: Confidence and Citation Gate - verify confidence >= 0.7 and citation coverage >= 0.95"]
+    completed["Output: status = completed - top_1 + top_3_alternatives with explanations"]
+    hitl["Output: status = hitl_review - routed to sales reviewer"]
 
     normalize --> filter
     filter --> score
@@ -606,31 +608,8 @@ flowchart LR
 
 ### Operational Consistency Notes
 
-The following operational controls are part of the implementation contract and must be reflected in production traces/dashboards:
-
-- **Autoscaling signals:** recommendation workers scale up when queue depth exceeds `50` messages or processing P95 exceeds `5s`; scale down after `5` consecutive minutes of empty queue; worker cap is `10`.
-- **Batch processing targets:** benchmark scenarios use batch size `5-10` and validate queue-drain behavior for `100` and `1,000` students.
-- **Fallback mode:** if LLM provider calls fail or circuit breaker is open, reranking falls back to heuristic ordering and explanations use constrained templates.
-- **Explanation cache reuse:** for repeated `student_id` + `teacher_id` pairs with unchanged teacher `profile_version`, reuse cached explanations and skip duplicate LLM calls.
-- **Task-based model routing:** cheap model tier for simple low-risk language tasks, balanced tier for standard reranking/explanations, and high-performance tier only for ambiguous high-impact adjudication.
+Operational policy details (autoscaling, fallback behavior, routing, and cost controls) are intentionally centralized in `implementation-plan.md` to avoid repeated policy text across deliverables.
 
 ### LLM Token and Cost Tracking (Per Student)
 
-These values are planning-time estimates and should be compared with observed dashboard metrics from `pipeline_trace_steps` token usage.
-
-Assumptions for re-estimation:
-- Balanced model price: `$2.50 / 1M` input tokens, `$10.00 / 1M` output tokens.
-- Cheap model tier for reranking: ~`10x` lower than balanced.
-- High-performance tier is only used on escalation paths (not included in default-path estimate).
-
-| LLM Call | Model Tier | Input Tokens | Output Tokens | Count | Estimated Cost |
-|---|---|---|---|---|---|
-| Reranking | Cheap | ~2,000 | ~500 | 1 | ~$0.0010 |
-| Explanation generation | Balanced | ~800 | ~300 | 4 | ~$0.0200 |
-| Citation validation | Balanced | ~1,500 | ~400 | 1 | ~$0.0078 |
-| **Total (default routed path)** |  | **~6,700** | **~2,100** | **6** | **~$0.0288** |
-
-Estimated cost comparison:
-- Previous single-tier estimate: `~$0.0378` per student.
-- Updated tier-routed estimate: `~$0.0288` per student.
-- Estimated savings: `~24%` per student on the default (non-escalated) path.
+Token and cost estimates are documented in `implementation-plan.md` (section `External API Constraints Plan -> LLM Cost Analysis`) as the single source of truth.
